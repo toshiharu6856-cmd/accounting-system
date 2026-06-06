@@ -7,6 +7,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-01-01',
     voucherType: 'OPENING',
     description: '期首残高',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '1001', debitAmount: 200000, creditCode: '3001', creditAmount: 200000, memo: '現金 期首' },
       { id: 2, debitCode: '1102', debitAmount: 800000, creditCode: '3001', creditAmount: 800000, memo: '普通預金 期首' },
@@ -17,6 +18,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-01-10',
     voucherType: 'NORMAL',
     description: '商品仕入（掛）',
+    deptCode: '0401',
     lines: [
       { id: 1, debitCode: '5001', debitAmount: 300000, creditCode: '2002', creditAmount: 300000, memo: '1月分仕入' },
     ],
@@ -26,6 +28,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-01-15',
     voucherType: 'NORMAL',
     description: '商品売上（掛）',
+    deptCode: '0101',
     lines: [
       { id: 1, debitCode: '1202', debitAmount: 500000, creditCode: '4001', creditAmount: 500000, memo: '1月売上' },
     ],
@@ -35,6 +38,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-01-20',
     voucherType: 'NORMAL',
     description: '買掛金支払',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '2002', debitAmount: 300000, creditCode: '1102', creditAmount: 300000, memo: '1月仕入分' },
     ],
@@ -44,6 +48,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-01-25',
     voucherType: 'NORMAL',
     description: '売掛金回収',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '1102', debitAmount: 500000, creditCode: '1202', creditAmount: 500000, memo: '1月売上分' },
     ],
@@ -53,6 +58,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-02-01',
     voucherType: 'NORMAL',
     description: '1月分給与支払',
+    deptCode: '0200',
     lines: [
       { id: 1, debitCode: '5101', debitAmount: 250000, creditCode: '1102', creditAmount: 250000, memo: '1月給与' },
     ],
@@ -62,6 +68,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-02-05',
     voucherType: 'NORMAL',
     description: '通信費支払',
+    deptCode: '0200',
     lines: [
       { id: 1, debitCode: '5203', debitAmount: 12000, creditCode: '1001', creditAmount: 12000, memo: '電話・インターネット' },
     ],
@@ -71,6 +78,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-02-10',
     voucherType: 'NORMAL',
     description: '商品仕入（掛）',
+    deptCode: '0401',
     lines: [
       { id: 1, debitCode: '5001', debitAmount: 400000, creditCode: '2002', creditAmount: 400000, memo: '2月分仕入' },
     ],
@@ -80,6 +88,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-02-15',
     voucherType: 'NORMAL',
     description: '商品売上（掛）',
+    deptCode: '0102',
     lines: [
       { id: 1, debitCode: '1202', debitAmount: 700000, creditCode: '4001', creditAmount: 700000, memo: '2月売上' },
     ],
@@ -89,6 +98,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-02-20',
     voucherType: 'NORMAL',
     description: '旅費交通費精算',
+    deptCode: '0100',
     lines: [
       { id: 1, debitCode: '5204', debitAmount: 35000, creditCode: '1001', creditAmount: 35000, memo: '出張費' },
     ],
@@ -98,6 +108,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-01',
     voucherType: 'NORMAL',
     description: '銀行借入',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '1102', debitAmount: 2000000, creditCode: '2101', creditAmount: 2000000, memo: '運転資金借入' },
     ],
@@ -107,6 +118,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-10',
     voucherType: 'NORMAL',
     description: '商品売上（掛）',
+    deptCode: '0101',
     lines: [
       { id: 1, debitCode: '1202', debitAmount: 800000, creditCode: '4001', creditAmount: 800000, memo: '3月売上' },
     ],
@@ -116,6 +128,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-15',
     voucherType: 'NORMAL',
     description: '消耗品購入',
+    deptCode: '0300',
     lines: [
       { id: 1, debitCode: '5205', debitAmount: 8000, creditCode: '1001', creditAmount: 8000, memo: '事務用品' },
     ],
@@ -125,6 +138,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-20',
     voucherType: 'NORMAL',
     description: '借入金利息支払',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '5301', debitAmount: 5000, creditCode: '1102', creditAmount: 5000, memo: '2月分利息' },
     ],
@@ -134,6 +148,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-25',
     voucherType: 'NORMAL',
     description: '受取利息',
+    deptCode: '0000',
     lines: [
       { id: 1, debitCode: '1102', debitAmount: 2000, creditCode: '4101', creditAmount: 2000, memo: '普通預金利息' },
     ],
@@ -143,6 +158,7 @@ export const SAMPLE_JOURNALS = [
     date: '2026-03-31',
     voucherType: 'NORMAL',
     description: '2・3月分給与支払',
+    deptCode: '0200',
     lines: [
       { id: 1, debitCode: '5101', debitAmount: 500000, creditCode: '1102', creditAmount: 500000, memo: '給与' },
     ],

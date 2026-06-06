@@ -1,19 +1,29 @@
 import { useState } from 'react'
 import Modal from './Modal'
 
+import { getFirstMonth } from '../../hooks/usePeriod'
+
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
   const m = String(i + 1).padStart(2, '0')
   return { value: m, label: `${i + 1}月` }
 })
 
-function fiscalLabel(startMonth) {
-  const s = parseInt(startMonth, 10)
-  const e = s === 1 ? 12 : s - 1
-  return `${s}月 〜 ${e}月`
+const DAYS = Array.from({ length: 31 }, (_, i) => {
+  const d = String(i + 1).padStart(2, '0')
+  return { value: d, label: `${i + 1}日` }
+})
+
+function fiscalLabel(startMonth, startDay) {
+  const firstMonth = getFirstMonth({ fiscalStartMonth: startMonth, fiscalStartDay: startDay })
+  const lastMonth  = firstMonth === 1 ? 12 : firstMonth - 1
+  const sd = parseInt(startDay || '01', 10)
+  const dayNote = sd >= 2 ? `（${parseInt(startMonth,10)}月${sd}日起算）` : ''
+  return `${firstMonth}月 〜 ${lastMonth}月${dayNote}`
 }
 
 const EMPTY_FORM = {
-  code: '', name: '', nameKana: '', fiscalStartMonth: '04',
+  code: '', name: '', nameKana: '',
+  fiscalStartMonth: '04', fiscalStartDay: '01',
   address: '', tel: '', isActive: true, isDefault: false,
 }
 
@@ -38,7 +48,7 @@ export default function CompanyMaster({ companies, saveCompany, deleteCompany })
   }
 
   function openEdit(co) {
-    setForm({ ...co })
+    setForm({ ...EMPTY_FORM, ...co })
     setErrors({})
     setModal({ mode: 'edit', id: co.id })
   }
@@ -108,7 +118,7 @@ export default function CompanyMaster({ companies, saveCompany, deleteCompany })
                       </td>
                       <td className="jl-td ms-name">{co.name}</td>
                       <td className="jl-td ms-kana">{co.nameKana}</td>
-                      <td className="jl-td">{fiscalLabel(co.fiscalStartMonth)}</td>
+                      <td className="jl-td">{fiscalLabel(co.fiscalStartMonth, co.fiscalStartDay)}</td>
                       <td className="jl-td">{co.tel}</td>
                       <td className="jl-td jl-td--actions">
                         <span className={`ms-status ${co.isActive ? 'ms-status--on' : 'ms-status--off'}`}>
@@ -171,17 +181,35 @@ export default function CompanyMaster({ companies, saveCompany, deleteCompany })
             </div>
 
             <div className="je-field">
-              <label className="je-label je-label--required">事業年度 開始月</label>
-              <select
-                className="je-select"
-                value={form.fiscalStartMonth}
-                onChange={e => setField('fiscalStartMonth', e.target.value)}
-              >
-                {MONTHS.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}始まり</option>
-                ))}
-              </select>
-              <span className="je-field-hint">事業年度: {fiscalLabel(form.fiscalStartMonth)}</span>
+              <label className="je-label je-label--required">事業年度 開始日</label>
+              <div className="co-fiscal-row">
+                <select
+                  className="je-select"
+                  value={form.fiscalStartMonth}
+                  onChange={e => setField('fiscalStartMonth', e.target.value)}
+                >
+                  {MONTHS.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  className="je-select"
+                  value={form.fiscalStartDay || '01'}
+                  onChange={e => setField('fiscalStartDay', e.target.value)}
+                >
+                  {DAYS.map(d => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="je-field-hint">
+                事業年度: {fiscalLabel(form.fiscalStartMonth, form.fiscalStartDay || '01')}
+                {parseInt(form.fiscalStartDay || '1', 10) >= 2 && (
+                  <span style={{ marginLeft: 8, color: 'var(--c-primary)' }}>
+                    ※ 開始日が2日以降のため翌月が第1月になります
+                  </span>
+                )}
+              </span>
             </div>
 
             <div className="je-field">

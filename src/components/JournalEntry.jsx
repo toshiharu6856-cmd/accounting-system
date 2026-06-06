@@ -43,13 +43,14 @@ function amtToStr(v) {
   return n > 0 ? n.toLocaleString('ja-JP') : ''
 }
 
-export default function JournalEntry({ initialData = null, onSave, onCancel, accounts }) {
+export default function JournalEntry({ initialData = null, onSave, onCancel, accounts, departments = [] }) {
   const isEditing = !!initialData
 
   const [journalDate, setJournalDate] = useState(initialData?.date || toDay())
   const [voucherNo]   = useState(initialData?.id || genVoucherNo())
   const [voucherType,  setVoucherType]  = useState(initialData?.voucherType  || '')
   const [description,  setDescription]  = useState(initialData?.description  || '')
+  const [deptCode,     setDeptCode]     = useState(initialData?.deptCode     || '')
   const [lines, setLines] = useState(() => {
     if (initialData?.lines?.length > 0) {
       return initialData.lines.map(l => ({
@@ -136,6 +137,7 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
       date: journalDate,
       voucherType,
       description,
+      deptCode: deptCode || '',
       lines: lines
         .filter(l =>
           (l.debitCode  && parseAmt(l.debitAmount)  > 0) ||
@@ -230,6 +232,20 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
                   placeholder="仕訳の概要"
                   maxLength={100}
                 />
+              </div>
+
+              <div className="je-field">
+                <label className="je-label">部門</label>
+                <select
+                  className="je-select"
+                  value={deptCode}
+                  onChange={e => setDeptCode(e.target.value)}
+                >
+                  <option value="">--- 未設定 ---</option>
+                  {departments.filter(d => d.isActive !== false).map(d => (
+                    <option key={d.id} value={d.code}>{d.code} {d.name}</option>
+                  ))}
+                </select>
               </div>
 
             </div>

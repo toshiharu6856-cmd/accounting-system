@@ -1,21 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import { useJournals }   from './hooks/useJournals'
-import { useMasters }    from './hooks/useMasters'
-import { usePeriod }     from './hooks/usePeriod'
-import JournalList       from './components/JournalList'
-import JournalEntry      from './components/JournalEntry'
-import GeneralLedger     from './components/GeneralLedger'
-import IncomeStatement   from './components/IncomeStatement'
-import BalanceSheet      from './components/BalanceSheet'
-import CompanyMaster     from './components/masters/CompanyMaster'
-import AccountMaster     from './components/masters/AccountMaster'
-import DepartmentMaster  from './components/masters/DepartmentMaster'
+import { useJournals }      from './hooks/useJournals'
+import { useMasters }       from './hooks/useMasters'
+import { usePeriod }        from './hooks/usePeriod'
+import { useBudget }        from './hooks/useBudget'
+import JournalList          from './components/JournalList'
+import JournalEntry         from './components/JournalEntry'
+import GeneralLedger        from './components/GeneralLedger'
+import IncomeStatement      from './components/IncomeStatement'
+import BalanceSheet         from './components/BalanceSheet'
+import DeptPL               from './components/DeptPL'
+import BudgetManagement     from './components/BudgetManagement'
+import CompanyMaster        from './components/masters/CompanyMaster'
+import AccountMaster        from './components/masters/AccountMaster'
+import DepartmentMaster     from './components/masters/DepartmentMaster'
 
 const MAIN_PAGES = [
   { id: 'list',   label: '仕訳一覧'   },
   { id: 'ledger', label: '総勘定元帳'  },
   { id: 'pl',     label: '損益計算書'  },
   { id: 'bs',     label: '貸借対照表'  },
+  { id: 'deptpl', label: '部門別損益'  },
+  { id: 'budget', label: '予算管理'   },
 ]
 
 const MASTER_PAGES = [
@@ -38,8 +43,9 @@ export default function App() {
     accounts,    saveAccount,   deleteAccount,
     departments, saveDepartment, deleteDepartment,
   } = useMasters()
+  const { budgets, getBudget, saveBudgetEntry, saveBudgetBulk, deleteBudget } = useBudget()
 
-  const periodCtx = usePeriod(journals)
+  const periodCtx = usePeriod(journals, companies)
 
   const activeAccounts = accounts.filter(a => a.isActive !== false)
 
@@ -139,6 +145,7 @@ export default function App() {
             onSave={handleSave}
             onCancel={() => setPage('list')}
             accounts={activeAccounts}
+            departments={departments}
           />
         )}
         {page === 'ledger' && (
@@ -159,6 +166,28 @@ export default function App() {
           <BalanceSheet
             journals={journals}
             accounts={activeAccounts}
+            periodCtx={periodCtx}
+          />
+        )}
+
+        {page === 'deptpl' && (
+          <DeptPL
+            journals={journals}
+            accounts={activeAccounts}
+            departments={departments}
+            periodCtx={periodCtx}
+            budgets={budgets}
+          />
+        )}
+        {page === 'budget' && (
+          <BudgetManagement
+            journals={journals}
+            accounts={activeAccounts}
+            departments={departments}
+            budgets={budgets}
+            getBudget={getBudget}
+            saveBudgetBulk={saveBudgetBulk}
+            deleteBudget={deleteBudget}
             periodCtx={periodCtx}
           />
         )}
