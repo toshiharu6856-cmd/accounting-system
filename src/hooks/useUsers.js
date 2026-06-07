@@ -20,7 +20,8 @@ export function useUsers() {
       const raw = localStorage.getItem(USERS_KEY)
       if (raw) {
         const p = JSON.parse(raw)
-        if (Array.isArray(p) && p.length > 0) return p
+        // email フィールドがない古いデータはサンプルデータに置き換え
+        if (Array.isArray(p) && p.length > 0 && p[0].email) return p
       }
     } catch {}
     return SAMPLE_USERS

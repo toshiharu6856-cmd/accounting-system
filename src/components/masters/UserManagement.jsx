@@ -2,13 +2,27 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { ROLES } from '../../hooks/useUsers'
 
-const EMPTY_FORM = { name: '', role: 'USER', isActive: true }
+const EMPTY_FORM = { name: '', email: '', password: '', role: 'USER', isActive: true }
 
 function validate(form, users, editingId) {
   const errs = {}
   if (!form.name.trim()) errs.name = '名前は必須です'
   else if (users.some(u => u.name === form.name.trim() && u.id !== editingId))
     errs.name = 'この名前は既に使用されています'
+
+  if (!form.email.trim()) errs.email = 'メールアドレスは必須です'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+    errs.email = 'メールアドレスの形式が正しくありません'
+  else if (users.some(u => u.email?.toLowerCase() === form.email.trim().toLowerCase() && u.id !== editingId))
+    errs.email = 'このメールアドレスは既に使用されています'
+
+  if (!editingId) {
+    if (!form.password.trim()) errs.password = 'パスワードは必須です'
+    else if (form.password.trim().length < 6) errs.password = 'パスワードは6文字以上で入力してください'
+  } else if (form.password.trim() && form.password.trim().length < 6) {
+    errs.password = 'パスワードは6文字以上で入力してください'
+  }
+
   if (!form.role) errs.role = '役割は必須です'
   return errs
 }
@@ -20,19 +34,22 @@ const ROLE_BADGE = {
 }
 
 export default function UserManagement({ users, saveUser, deleteUser, currentUser }) {
-  const [modal,  setModal]  = useState(null)
-  const [form,   setForm]   = useState(EMPTY_FORM)
-  const [errors, setErrors] = useState({})
+  const [modal,    setModal]    = useState(null)
+  const [form,     setForm]     = useState(EMPTY_FORM)
+  const [errors,   setErrors]   = useState({})
+  const [showPass, setShowPass] = useState(false)
 
   function openAdd() {
     setForm(EMPTY_FORM)
     setErrors({})
+    setShowPass(false)
     setModal({ mode: 'add' })
   }
 
   function openEdit(u) {
-    setForm({ ...EMPTY_FORM, ...u })
+    setForm({ ...EMPTY_FORM, ...u, password: '' })  // パスワードは再入力
     setErrors({})
+    setShowPass(false)
     setModal({ mode: 'edit', id: u.id })
   }
 
@@ -44,9 +61,20 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
   function handleSave() {
     const errs = validate(form, users, modal?.id)
     if (Object.keys(errs).length) { setErrors(errs); return }
-    const item = modal.mode === 'add'
-      ? { ...form, name: form.name.trim() }
-      : { ...form, id: modal.id, name: form.name.trim() }
+
+    let item
+    if (modal.mode === 'add') {
+      item = { ...form, name: form.name.trim(), email: form.email.trim() }
+    } else {
+      const existing = users.find(u => u.id === modal.id)
+      item = {
+        ...form,
+        id:       modal.id,
+        name:     form.name.trim(),
+        email:    form.email.trim(),
+        password: form.password.trim() || existing?.password || '',
+      }
+    }
     saveUser(item)
     setModal(null)
   }
@@ -79,6 +107,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
               <thead>
                 <tr>
                   <th className="jl-th">名前</th>
+                  <th className="jl-th">メールアドレス</th>
                   <th className="jl-th">役割</th>
                   <th className="jl-th jl-th--center">状態</th>
                   <th className="jl-th jl-th--center">操作</th>
@@ -86,7 +115,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
               </thead>
               <tbody>
                 {users.length === 0 ? (
-                  <tr><td colSpan={4} className="jl-empty-cell">ユーザーがいません</td></tr>
+                  <tr><td colSpan={5} className="jl-empty-cell">ユーザーがいません</td></tr>
                 ) : (
                   users.map((u, idx) => (
                     <tr key={u.id} className={`jl-tr ${idx % 2 === 1 ? 'jl-tr--alt' : ''}`}>
@@ -96,6 +125,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
                           <span className="ms-default-badge">ログイン中</span>
                         )}
                       </td>
+                      <td className="jl-td" style={{ fontSize: 13 }}>{u.email || '—'}</td>
                       <td className="jl-td">
                         <span className={`apv-role ${ROLE_BADGE[u.role] || ''}`}>{roleName(u.role)}</span>
                       </td>
@@ -120,6 +150,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
       {modal && (
         <Modal title={modal.mode === 'add' ? 'ユーザーを追加' : 'ユーザーを編集'} onClose={() => setModal(null)}>
           <div className="ms-form">
+            {/* 名前 */}
             <div className="je-field">
               <label className="je-label je-label--required">名前</label>
               <input
@@ -132,6 +163,52 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
               {errors.name && <span className="je-field-error">{errors.name}</span>}
             </div>
 
+            {/* メールアドレス */}
+            <div className="je-field">
+              <label className="je-label je-label--required">メールアドレス</label>
+              <input
+                type="email"
+                className={`je-input ${errors.email ? 'je-input--error' : ''}`}
+                value={form.email}
+                onChange={e => setField('email', e.target.value)}
+                placeholder="user@example.com"
+                maxLength={100}
+              />
+              {errors.email && <span className="je-field-error">{errors.email}</span>}
+            </div>
+
+            {/* パスワード */}
+            <div className="je-field">
+              <label className="je-label je-label--required">
+                パスワード
+                {modal.mode === 'edit' && (
+                  <span className="je-field-hint" style={{ marginLeft: 8, fontWeight: 400 }}>
+                    空欄の場合は変更しません
+                  </span>
+                )}
+              </label>
+              <div className="login-pass-wrap">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  className={`je-input login-input--pass ${errors.password ? 'je-input--error' : ''}`}
+                  value={form.password}
+                  onChange={e => setField('password', e.target.value)}
+                  placeholder={modal.mode === 'edit' ? '変更する場合のみ入力' : '6文字以上'}
+                  maxLength={50}
+                />
+                <button
+                  type="button"
+                  className="login-pass-toggle"
+                  onClick={() => setShowPass(v => !v)}
+                  title={showPass ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  {showPass ? '🙈' : '👁'}
+                </button>
+              </div>
+              {errors.password && <span className="je-field-error">{errors.password}</span>}
+            </div>
+
+            {/* 役割 */}
             <div className="je-field">
               <label className="je-label je-label--required">役割</label>
               <select
@@ -144,10 +221,11 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
                 ))}
               </select>
               <span className="je-field-hint">
-                一般ユーザー: 仕訳入力・申請　承認者: 承認・却下　管理者: 全権限
+                一般ユーザー: 仕訳入力・照会　承認者: 承認・却下　管理者: 全権限
               </span>
             </div>
 
+            {/* 有効フラグ */}
             <div className="ms-form-row ms-form-row--checks">
               <label className="ms-check-label">
                 <input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} />

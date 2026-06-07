@@ -2191,3 +2191,197 @@ input, select { font-family: inherit; }
   background: #dc3545;
   margin-left: auto;
 }
+
+/* ============================================================
+   ログイン画面 (login-*)
+   ============================================================ */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a4fa0 0%, #1a73e8 60%, #34a8eb 100%);
+  padding: 24px;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  padding: 40px 44px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.login-logo-icon { font-size: 28px; }
+.login-logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a4fa0;
+  letter-spacing: 0.03em;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--c-text, #1a202c);
+  margin: 0 0 28px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-input { width: 100%; }
+
+.login-pass-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.login-input--pass {
+  width: 100%;
+  padding-right: 42px !important;
+}
+.login-pass-toggle {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  line-height: 1;
+  color: var(--c-text-2);
+  opacity: 0.7;
+}
+.login-pass-toggle:hover { opacity: 1; }
+
+.login-error {
+  background: #fff3f3;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #c0392b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.login-error-icon { font-style: normal; }
+
+.login-btn {
+  width: 100%;
+  padding: 12px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-top: 4px;
+}
+
+.login-hint-section {
+  margin-top: 24px;
+  border-top: 1px solid var(--c-border, #e2e8f0);
+  padding-top: 16px;
+}
+
+.login-hint-toggle {
+  background: none;
+  border: none;
+  color: var(--c-text-2, #718096);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  justify-content: center;
+}
+.login-hint-toggle:hover { color: var(--c-primary, #1a73e8); }
+
+.login-hints {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--c-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--c-bg, #f8f9fa);
+  cursor: pointer;
+  font-size: 12px;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s;
+}
+.login-hint-row:hover { background: var(--c-hover, #eef2ff); border-color: var(--c-primary, #1a73e8); }
+
+.login-hint-role {
+  display: inline-block;
+  min-width: 80px;
+  font-weight: 600;
+  color: var(--c-text, #1a202c);
+}
+.login-hint-cred { color: var(--c-text-2, #718096); font-family: monospace; }
+.login-hint-sep  { color: var(--c-text-muted, #a0aec0); }
+
+/* ============================================================
+   ヘッダー ログインユーザー情報・ログアウトボタン
+   ============================================================ */
+
+.app-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(255,255,255,0.25);
+  white-space: nowrap;
+}
+
+.app-user-role {
+  font-size: 11px !important;
+  padding: 2px 7px !important;
+}
+
+.app-user-name {
+  color: rgba(255,255,255,0.9);
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.95);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.app-logout-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* 旧ユーザー切替（廃止済みだが念のため非表示） */
+.app-user-switcher { display: none !important; }
