@@ -40,6 +40,7 @@ export const SAMPLE_MASTER_ACCOUNTS = [
   {
     id: 'ACC-1001', code: '1001', name: '現金',
     category: 'ASSET', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'genkin', kana: 'ゲンキン',
     subAccounts: [
       { id: 'SA-1001-01', code: '01', name: '手元現金' },
       { id: 'SA-1001-02', code: '02', name: '小口現金' },
@@ -48,6 +49,7 @@ export const SAMPLE_MASTER_ACCOUNTS = [
   {
     id: 'ACC-1102', code: '1102', name: '普通預金',
     category: 'ASSET', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'futsuuyokin', kana: 'フツウヨキン',
     subAccounts: [
       { id: 'SA-1102-01', code: '01', name: '○○銀行 普通預金' },
       { id: 'SA-1102-02', code: '02', name: '△△銀行 普通預金' },
@@ -56,46 +58,54 @@ export const SAMPLE_MASTER_ACCOUNTS = [
   {
     id: 'ACC-1202', code: '1202', name: '売掛金',
     category: 'ASSET', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'urikakekin', kana: 'ウリカケキン',
     subAccounts: [],
   },
   {
     id: 'ACC-1401', code: '1401', name: '商品',
     category: 'ASSET', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'shohin', kana: 'ショウヒン',
     subAccounts: [],
   },
   // 負債
   {
     id: 'ACC-2002', code: '2002', name: '買掛金',
     category: 'LIABILITY', normalBalance: 'CREDIT', isActive: true,
-    subAccounts: [],
-  },
-  {
-    id: 'ACC-2201', code: '2201', name: '未払金',
-    category: 'LIABILITY', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'kaikakekin', kana: 'カイカケキン',
     subAccounts: [],
   },
   {
     id: 'ACC-2101', code: '2101', name: '借入金',
     category: 'LIABILITY', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'kariirekin', kana: 'カリイレキン',
     subAccounts: [
       { id: 'SA-2101-01', code: '01', name: '○○銀行借入' },
     ],
+  },
+  {
+    id: 'ACC-2201', code: '2201', name: '未払金',
+    category: 'LIABILITY', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'miharaikin', kana: 'ミハライキン',
+    subAccounts: [],
   },
   // 純資産
   {
     id: 'ACC-3001', code: '3001', name: '資本金',
     category: 'EQUITY', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'shihonkin', kana: 'シホンキン',
     subAccounts: [],
   },
   {
     id: 'ACC-3301', code: '3301', name: '繰越利益剰余金',
     category: 'EQUITY', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'kurikoshirieki', kana: 'クリコシリエキ',
     subAccounts: [],
   },
   // 収益
   {
     id: 'ACC-4001', code: '4001', name: '売上高',
     category: 'REVENUE', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'uriagedaka', kana: 'ウリアゲダカ',
     subAccounts: [
       { id: 'SA-4001-01', code: '01', name: '商品売上' },
       { id: 'SA-4001-02', code: '02', name: 'サービス売上' },
@@ -104,37 +114,44 @@ export const SAMPLE_MASTER_ACCOUNTS = [
   {
     id: 'ACC-4101', code: '4101', name: '受取利息',
     category: 'REVENUE', normalBalance: 'CREDIT', isActive: true,
+    romaji: 'uketoririsoku', kana: 'ウケトリリソク',
     subAccounts: [],
   },
   // 費用
   {
     id: 'ACC-5001', code: '5001', name: '仕入高',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'shiiredaka', kana: 'シイレダカ',
     subAccounts: [],
   },
   {
     id: 'ACC-5101', code: '5101', name: '給料手当',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'kyuryoteate', kana: 'キュウリョウテアテ',
     subAccounts: [],
   },
   {
     id: 'ACC-5203', code: '5203', name: '通信費',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'tsushinhi', kana: 'ツウシンヒ',
     subAccounts: [],
   },
   {
     id: 'ACC-5204', code: '5204', name: '旅費交通費',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'ryohikotsuhi', kana: 'リョヒコウツウヒ',
     subAccounts: [],
   },
   {
     id: 'ACC-5205', code: '5205', name: '消耗品費',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'shomohinhi', kana: 'ショウモウヒンヒ',
     subAccounts: [],
   },
   {
     id: 'ACC-5301', code: '5301', name: '支払利息',
     category: 'EXPENSE', normalBalance: 'DEBIT', isActive: true,
+    romaji: 'shiharairisoku', kana: 'シハライリソク',
     subAccounts: [],
   },
 ]

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 import { SAMPLE_USERS } from '../data/masterSampleData'
 
-const USERS_KEY   = 'accounting_users_v1'
-const CURRENT_KEY = 'accounting_current_user_v1'
+const SESSION_KEY = 'accounting_session_v1'
 
 export const ROLES = [
   { code: 'USER',     name: '一般ユーザー' },
@@ -14,55 +14,101 @@ function genId() {
   return `USR-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`
 }
 
-export function useUsers() {
-  const [users, setUsers] = useState(() => {
-    try {
-      const raw = localStorage.getItem(USERS_KEY)
-      if (raw) {
-        const p = JSON.parse(raw)
-        // email フィールドがない古いデータはサンプルデータに置き換え
-        if (Array.isArray(p) && p.length > 0 && p[0].email) return p
-      }
-    } catch {}
-    return SAMPLE_USERS
-  })
+function userFromRow(r) {
+  return {
+    id:        r.id,
+    name:      r.name,
+    email:     r.email,
+    password:  r.password,
+    role:      r.role,
+    isActive:  r.is_active,
+    createdAt: r.created_at,
+  }
+}
 
+let _userSeeded = false
+
+export function useUsers() {
+  const [users, setUsers] = useState([])
   const [currentUserId, _setCurrentUserId] = useState(() => {
     try {
-      const raw = localStorage.getItem(CURRENT_KEY)
-      if (raw) return raw
+      const raw = localStorage.getItem(SESSION_KEY)
+      if (raw) return JSON.parse(raw).userId || null
     } catch {}
-    return SAMPLE_USERS[0]?.id || null
+    return null
   })
+  const [loading, setLoading] = useState(true)
+  const seedingRef = useRef(false)
 
-  useEffect(() => {
-    try { localStorage.setItem(USERS_KEY, JSON.stringify(users)) } catch {}
-  }, [users])
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase.from('users').select('*').order('created_at')
+    if (error) { console.error('users fetch error:', error); setLoading(false); return }
+
+    if (data.length === 0 && !_userSeeded && !seedingRef.current) {
+      seedingRef.current = true
+      _userSeeded = true
+      await seedUsers()
+      seedingRef.current = false
+      return fetchAll()
+    }
+
+    const loaded = data.map(userFromRow)
+    setUsers(loaded)
+
+    // セッションにユーザーがいない場合は最初のアクティブユーザーをセット
+    if (!currentUserId && loaded.length > 0) {
+      _setCurrentUserId(loaded.find(u => u.isActive)?.id || null)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  async function seedUsers() {
+    await supabase.from('users').upsert(SAMPLE_USERS.map(u => ({
+      id:         u.id,
+      name:       u.name,
+      email:      u.email,
+      password:   u.password,
+      role:       u.role,
+      is_active:  u.isActive,
+      created_at: u.createdAt,
+    })))
+  }
 
   function setCurrentUserId(id) {
     _setCurrentUserId(id)
-    try { localStorage.setItem(CURRENT_KEY, id) } catch {}
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: id, loggedInAt: new Date().toISOString() }))
+    } catch {}
   }
 
   const currentUser = users.find(u => u.id === currentUserId)
     || users.find(u => u.isActive)
     || null
 
-  function saveUser(item) {
-    const entry = item.id
-      ? item
-      : { ...item, id: genId(), createdAt: new Date().toISOString() }
-    setUsers(prev => {
-      const idx = prev.findIndex(u => u.id === entry.id)
-      return idx >= 0
-        ? prev.map(u => u.id === entry.id ? entry : u)
-        : [...prev, entry]
+  async function saveUser(item) {
+    const now = new Date().toISOString()
+    const entry = item.id ? item : { ...item, id: genId(), createdAt: now }
+    const { error } = await supabase.from('users').upsert({
+      id:         entry.id,
+      name:       entry.name,
+      email:      entry.email,
+      password:   entry.password,
+      role:       entry.role,
+      is_active:  entry.isActive,
+      created_at: entry.createdAt || now,
     })
+    if (error) { console.error('saveUser error:', error); return }
+    await fetchAll()
   }
 
-  function deleteUser(id) {
+  async function deleteUser(id) {
+    const { error } = await supabase.from('users').delete().eq('id', id)
+    if (error) { console.error('deleteUser error:', error); return }
     setUsers(prev => prev.filter(u => u.id !== id))
   }
 
-  return { users, currentUser, currentUserId, setCurrentUserId, saveUser, deleteUser }
+  return { users, currentUser, currentUserId, setCurrentUserId, saveUser, deleteUser, loading }
 }

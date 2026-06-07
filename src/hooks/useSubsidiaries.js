@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
-
-const KEY = 'accounting_subsidiaries_v1'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 export const CURRENCIES = [
   { code: 'JPY', name: '日本円' },
@@ -14,33 +13,52 @@ export const CURRENCIES = [
   { code: 'THB', name: 'タイバーツ' },
 ]
 
+function subFromRow(r) {
+  return {
+    id:        r.id,
+    name:      r.name,
+    code:      r.code,
+    country:   r.country,
+    currency:  r.currency,
+    ownership: r.ownership,
+    isActive:  r.is_active,
+  }
+}
+
 export function useSubsidiaries() {
-  const [subsidiaries, setSubsidiaries] = useState(() => {
-    try {
-      const raw = localStorage.getItem(KEY)
-      if (raw) {
-        const p = JSON.parse(raw)
-        if (Array.isArray(p)) return p
-      }
-    } catch {}
-    return []
-  })
+  const [subsidiaries, setSubsidiaries] = useState([])
+  const [loading,      setLoading]      = useState(true)
 
-  useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(subsidiaries)) } catch {}
-  }, [subsidiaries])
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase.from('subsidiaries').select('*').order('name')
+    if (error) { console.error('subsidiaries fetch error:', error); setLoading(false); return }
+    setSubsidiaries(data.map(subFromRow))
+    setLoading(false)
+  }, [])
 
-  function saveSubsidiary(item) {
-    setSubsidiaries(prev => {
-      const existing = prev.find(s => s.id === item.id)
-      if (existing) return prev.map(s => s.id === item.id ? item : s)
-      return [...prev, { ...item, id: `SUB-${Date.now()}` }]
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  async function saveSubsidiary(item) {
+    const entry = item.id ? item : { ...item, id: `SUB-${Date.now()}` }
+    const { error } = await supabase.from('subsidiaries').upsert({
+      id:        entry.id,
+      name:      entry.name,
+      code:      entry.code || null,
+      country:   entry.country || null,
+      currency:  entry.currency || 'JPY',
+      ownership: entry.ownership ?? 100,
+      is_active: entry.isActive ?? true,
     })
+    if (error) { console.error('saveSubsidiary error:', error); return }
+    await fetchAll()
   }
 
-  function deleteSubsidiary(id) {
+  async function deleteSubsidiary(id) {
+    const { error } = await supabase.from('subsidiaries').delete().eq('id', id)
+    if (error) { console.error('deleteSubsidiary error:', error); return }
     setSubsidiaries(prev => prev.filter(s => s.id !== id))
   }
 
-  return { subsidiaries, saveSubsidiary, deleteSubsidiary }
+  return { subsidiaries, loading, saveSubsidiary, deleteSubsidiary }
 }

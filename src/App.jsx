@@ -91,19 +91,22 @@ export default function App() {
   const soxDropRef  = useRef(null)
   const consoDropRef = useRef(null)
 
-  const { journals, saveJournal, deleteJournal, resetToSample } = useJournals()
+  const { journals, loading: jLoading, saveJournal, deleteJournal, resetToSample } = useJournals()
   const {
     companies,   saveCompany,   deleteCompany,
     accounts,    saveAccount,   deleteAccount,
     departments, saveDepartment, deleteDepartment,
+    loading: mLoading,
   } = useMasters()
   const { budgets, getBudget, saveBudgetBulk, deleteBudget } = useBudget()
-  const { users, saveUser, deleteUser }                        = useUsers()
+  const { users, saveUser, deleteUser, loading: uLoading }   = useUsers()
   const { approvals, requestApproval, approveJournal, rejectJournal, withdrawApproval } = useApprovals()
-  const { isLoggedIn, currentUser, login, logout }            = useAuth(users)
+  const { isLoggedIn, currentUser, login, logout, sessionLoading } = useAuth(users)
   const { logs: auditLogs, addLog, getLogsForJournal }        = useAuditLog()
   const { logs: opLogs, addOpLog }                            = useOpLog()
   const { subsidiaries, saveSubsidiary, deleteSubsidiary }    = useSubsidiaries()
+
+  const isLoading = jLoading || mLoading || uLoading || sessionLoading
   const {
     fxRates, saveFxRate, deleteFxRate, getFxRate,
     packages, savePackage, deletePackage, getPackage,
@@ -265,6 +268,15 @@ export default function App() {
   }
 
   // 未ログインはログイン画面を表示
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem', color: '#6b7280' }}>
+        <div style={{ fontSize: '2rem' }}>⏳</div>
+        <div>データを読み込んでいます...</div>
+      </div>
+    )
+  }
+
   if (!isLoggedIn) {
     return <LoginScreen onLogin={handleLogin} />
   }

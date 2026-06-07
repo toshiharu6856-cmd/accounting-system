@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
-const KEY = 'accounting_oplog_v1'
-const MAX_ENTRIES = 10000
 let _seq = 1
 
 function genLogId() {
@@ -10,47 +9,61 @@ function genLogId() {
 }
 
 export const OP_TYPES = {
-  LOGIN:   { label: 'ログイン',       cls: 'op-badge--login'   },
-  LOGOUT:  { label: 'ログアウト',     cls: 'op-badge--logout'  },
-  CREATE:  { label: '登録',           cls: 'op-badge--create'  },
-  UPDATE:  { label: '更新',           cls: 'op-badge--update'  },
-  DELETE:  { label: '削除',           cls: 'op-badge--delete'  },
-  APPROVE: { label: '承認',           cls: 'op-badge--approve' },
-  REJECT:  { label: '却下',           cls: 'op-badge--reject'  },
-  EXPORT:  { label: 'エクスポート',   cls: 'op-badge--export'  },
+  LOGIN:   { label: 'ログイン',     cls: 'op-badge--login'   },
+  LOGOUT:  { label: 'ログアウト',   cls: 'op-badge--logout'  },
+  CREATE:  { label: '登録',         cls: 'op-badge--create'  },
+  UPDATE:  { label: '更新',         cls: 'op-badge--update'  },
+  DELETE:  { label: '削除',         cls: 'op-badge--delete'  },
+  APPROVE: { label: '承認',         cls: 'op-badge--approve' },
+  REJECT:  { label: '却下',         cls: 'op-badge--reject'  },
+  EXPORT:  { label: 'エクスポート', cls: 'op-badge--export'  },
+}
+
+function logFromRow(r) {
+  return {
+    id:         String(r.id),
+    type:       r.action,
+    userId:     r.user_id   || '',
+    userName:   r.user_name || '',
+    target:     r.target    || '',
+    detail:     r.detail    || '',
+    recordedAt: r.recorded_at,
+  }
 }
 
 export function useOpLog() {
-  const [logs, setLogs] = useState(() => {
-    try {
-      const raw = localStorage.getItem(KEY)
-      if (raw) {
-        const p = JSON.parse(raw)
-        if (Array.isArray(p)) return p
-      }
-    } catch {}
-    return []
-  })
+  const [logs,    setLogs]    = useState([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(logs)) } catch {}
-  }, [logs])
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('op_logs')
+      .select('*')
+      .order('recorded_at', { ascending: false })
+      .limit(10000)
 
-  function addOpLog({ type, userId, userName, target, detail }) {
-    const log = {
-      id:         genLogId(),
-      type,
-      userId:     userId   || '',
-      userName:   userName || '',
-      target:     target   || '',
-      detail:     detail   || '',
-      recordedAt: new Date().toISOString(),
+    if (error) { console.error('op_logs fetch error:', error); setLoading(false); return }
+    setLogs(data.map(logFromRow))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  async function addOpLog({ type, userId, userName, target, detail }) {
+    const now = new Date().toISOString()
+    const row = {
+      recorded_at: now,
+      action:      type,
+      user_id:     userId   || '',
+      user_name:   userName || '',
+      target:      target   || '',
+      detail:      detail   || '',
     }
-    setLogs(prev => {
-      const next = [log, ...prev]
-      return next.length > MAX_ENTRIES ? next.slice(0, MAX_ENTRIES) : next
-    })
+    const { data, error } = await supabase.from('op_logs').insert(row).select().single()
+    if (error) { console.error('addOpLog error:', error); return }
+    setLogs(prev => [logFromRow(data), ...prev])
   }
 
-  return { logs, addOpLog }
+  return { logs, loading, addOpLog }
 }

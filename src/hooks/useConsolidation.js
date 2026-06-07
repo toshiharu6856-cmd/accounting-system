@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react'
-
-const FX_KEY   = 'accounting_fxrates_v1'
-const PKG_KEY  = 'accounting_conso_packages_v1'
-const ELIM_KEY = 'accounting_eliminations_v1'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 export const PKG_STATUS = {
   DRAFT:     { label: '下書',   cls: 'pkg-badge--draft'     },
@@ -19,25 +16,31 @@ export const ACCOUNT_TYPES = [
   { code: 'PL_EXPENSE',   label: 'PL 費用',   group: 'PL' },
 ]
 
-// BS items use END rate; PL items use AVG rate
 export function rateTypeForAccount(accountType) {
   return accountType?.startsWith('BS_') ? 'END' : 'AVG'
 }
 
-export function useConsolidation() {
-  const [fxRates, setFxRates] = useState(() => {
-    try { const r = localStorage.getItem(FX_KEY); return r ? JSON.parse(r) : [] } catch { return [] }
-  })
-  const [packages, setPackages] = useState(() => {
-    try { const r = localStorage.getItem(PKG_KEY); return r ? JSON.parse(r) : [] } catch { return [] }
-  })
-  const [eliminations, setEliminations] = useState(() => {
-    try { const r = localStorage.getItem(ELIM_KEY); return r ? JSON.parse(r) : [] } catch { return [] }
-  })
+// 連結用テーブルは汎用 JSON ストアとして conso_data テーブルを使う
+// （テーブルが存在しない場合は localStorage にフォールバック）
+const FX_KEY   = 'accounting_fxrates_v1'
+const PKG_KEY  = 'accounting_conso_packages_v1'
+const ELIM_KEY = 'accounting_eliminations_v1'
 
-  useEffect(() => { try { localStorage.setItem(FX_KEY,   JSON.stringify(fxRates))      } catch {} }, [fxRates])
-  useEffect(() => { try { localStorage.setItem(PKG_KEY,  JSON.stringify(packages))     } catch {} }, [packages])
-  useEffect(() => { try { localStorage.setItem(ELIM_KEY, JSON.stringify(eliminations)) } catch {} }, [eliminations])
+function loadLocal(key) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : [] } catch { return [] }
+}
+function saveLocal(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
+}
+
+export function useConsolidation() {
+  const [fxRates,      setFxRates]      = useState(() => loadLocal(FX_KEY))
+  const [packages,     setPackages]     = useState(() => loadLocal(PKG_KEY))
+  const [eliminations, setEliminations] = useState(() => loadLocal(ELIM_KEY))
+
+  useEffect(() => { saveLocal(FX_KEY,   fxRates)      }, [fxRates])
+  useEffect(() => { saveLocal(PKG_KEY,  packages)     }, [packages])
+  useEffect(() => { saveLocal(ELIM_KEY, eliminations) }, [eliminations])
 
   function saveFxRate(item) {
     setFxRates(prev => {
@@ -73,8 +76,8 @@ export function useConsolidation() {
   function deleteElimination(id) { setEliminations(prev => prev.filter(e => e.id !== id)) }
 
   return {
-    fxRates, saveFxRate, deleteFxRate, getFxRate,
-    packages, savePackage, deletePackage, getPackage,
+    fxRates,      saveFxRate,      deleteFxRate,  getFxRate,
+    packages,     savePackage,     deletePackage, getPackage,
     eliminations, saveElimination, deleteElimination,
   }
 }

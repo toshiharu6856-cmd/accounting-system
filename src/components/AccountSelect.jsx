@@ -17,7 +17,15 @@ export default function AccountSelect({
   const selected = allAccounts.find(a => a.code === value)
 
   const filtered = search.trim()
-    ? allAccounts.filter(a => a.code.includes(search) || a.name.includes(search))
+    ? allAccounts.filter(a => {
+        const q = search.toLowerCase()
+        return (
+          a.code.includes(search) ||
+          a.name.includes(search) ||
+          (a.romaji && a.romaji.toLowerCase().includes(q)) ||
+          (a.kana   && a.kana.includes(search))
+        )
+      })
     : allAccounts
 
   const grouped = Object.entries(CATEGORIES)
