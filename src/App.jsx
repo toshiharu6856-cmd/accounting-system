@@ -8,6 +8,8 @@ import { useApprovals }     from './hooks/useApprovals'
 import { useAuth }          from './hooks/useAuth'
 import { useAuditLog }      from './hooks/useAuditLog'
 import { useOpLog }         from './hooks/useOpLog'
+import { useSubsidiaries }  from './hooks/useSubsidiaries'
+import { useConsolidation } from './hooks/useConsolidation'
 import JournalList          from './components/JournalList'
 import JournalEntry         from './components/JournalEntry'
 import GeneralLedger        from './components/GeneralLedger'
@@ -21,6 +23,11 @@ import InvoiceSummary       from './components/InvoiceSummary'
 import AuditHistory         from './components/AuditHistory'
 import OpLog                from './components/OpLog'
 import ICSoxDashboard       from './components/ICSoxDashboard'
+import SubsidiaryMaster     from './components/consolidation/SubsidiaryMaster'
+import FxRates              from './components/consolidation/FxRates'
+import ConsolidationPackage from './components/consolidation/ConsolidationPackage'
+import Eliminations         from './components/consolidation/Eliminations'
+import ConsolidatedFS       from './components/consolidation/ConsolidatedFS'
 import LoginScreen          from './components/LoginScreen'
 import CompanyMaster        from './components/masters/CompanyMaster'
 import AccountMaster        from './components/masters/AccountMaster'
@@ -31,7 +38,7 @@ import UserManagement       from './components/masters/UserManagement'
 const ALLOWED_PAGES = {
   USER:     new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'myapprovals']),
   APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'audithistory']),
-  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt', 'audithistory', 'jsoxdash', 'oplog']),
+  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt', 'audithistory', 'jsoxdash', 'oplog', 'conso-subs', 'conso-fx', 'conso-pkg', 'conso-elim', 'conso-fs']),
 }
 
 const ALL_MAIN_PAGES = [
@@ -57,9 +64,18 @@ const SOX_PAGES = [
   { id: 'oplog',    label: '操作ログ照会'           },
 ]
 
+const CONSO_PAGES = [
+  { id: 'conso-subs', label: '子会社管理'     },
+  { id: 'conso-fx',   label: '為替レート'     },
+  { id: 'conso-pkg',  label: '連結パッケージ' },
+  { id: 'conso-elim', label: '相殺消去'       },
+  { id: 'conso-fs',   label: '連結財務諸表'   },
+]
+
 const MASTER_IDS   = new Set(MASTER_PAGES.map(p => p.id))
 const APPROVAL_IDS = new Set(['approvalinbox', 'myapprovals'])
 const SOX_IDS      = new Set(SOX_PAGES.map(p => p.id))
+const CONSO_IDS    = new Set(CONSO_PAGES.map(p => p.id))
 
 const ROLE_LABELS = { USER: '一般', APPROVER: '承認者', ADMIN: '管理者' }
 
@@ -69,9 +85,11 @@ export default function App() {
   const [masterOpen,     setMasterOpen]     = useState(false)
   const [approvalOpen,   setApprovalOpen]   = useState(false)
   const [soxOpen,        setSoxOpen]        = useState(false)
+  const [consoOpen,      setConsoOpen]      = useState(false)
   const dropdownRef = useRef(null)
   const apvDropRef  = useRef(null)
   const soxDropRef  = useRef(null)
+  const consoDropRef = useRef(null)
 
   const { journals, saveJournal, deleteJournal, resetToSample } = useJournals()
   const {
@@ -85,6 +103,12 @@ export default function App() {
   const { isLoggedIn, currentUser, login, logout }            = useAuth(users)
   const { logs: auditLogs, addLog, getLogsForJournal }        = useAuditLog()
   const { logs: opLogs, addOpLog }                            = useOpLog()
+  const { subsidiaries, saveSubsidiary, deleteSubsidiary }    = useSubsidiaries()
+  const {
+    fxRates, saveFxRate, deleteFxRate, getFxRate,
+    packages, savePackage, deletePackage, getPackage,
+    eliminations, saveElimination, deleteElimination,
+  } = useConsolidation()
 
   function logOp(entry) {
     addOpLog({
@@ -115,7 +139,8 @@ export default function App() {
     function handler(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setMasterOpen(false)
       if (apvDropRef.current  && !apvDropRef.current.contains(e.target))  setApprovalOpen(false)
-      if (soxDropRef.current  && !soxDropRef.current.contains(e.target))  setSoxOpen(false)
+      if (soxDropRef.current   && !soxDropRef.current.contains(e.target))   setSoxOpen(false)
+      if (consoDropRef.current && !consoDropRef.current.contains(e.target)) setConsoOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -128,6 +153,7 @@ export default function App() {
     setMasterOpen(false)
     setApprovalOpen(false)
     setSoxOpen(false)
+    setConsoOpen(false)
   }
 
   function handleNew() {
@@ -246,6 +272,7 @@ export default function App() {
   const isMasterPage   = MASTER_IDS.has(page)
   const isApprovalPage = APPROVAL_IDS.has(page)
   const isSoxPage      = SOX_IDS.has(page)
+  const isConsoPage    = CONSO_IDS.has(page)
   const visibleMain    = ALL_MAIN_PAGES.filter(p => allowed.has(p.id))
 
   return (
@@ -317,6 +344,29 @@ export default function App() {
                         className={`app-dropdown-item ${page === p.id ? 'app-dropdown-item--active' : ''}`}
                         onClick={() => goTo(p.id)}
                       >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 連結会計（管理者のみ） */}
+            {isAdmin && (
+              <div className="app-dropdown" ref={consoDropRef}>
+                <button
+                  className={`app-nav-btn app-nav-btn--dropdown ${isConsoPage || consoOpen ? 'app-nav-btn--active' : ''}`}
+                  onClick={() => setConsoOpen(v => !v)}
+                >
+                  連結会計 <span className="app-dropdown-chevron">{consoOpen ? '▲' : '▼'}</span>
+                </button>
+                {consoOpen && (
+                  <div className="app-dropdown-menu">
+                    {CONSO_PAGES.map(p => (
+                      <button key={p.id}
+                        className={`app-dropdown-item ${page === p.id ? 'app-dropdown-item--active' : ''}`}
+                        onClick={() => goTo(p.id)}>
                         {p.label}
                       </button>
                     ))}
@@ -501,6 +551,50 @@ export default function App() {
         )}
         {page === 'oplog' && (
           <OpLog logs={opLogs} users={users} />
+        )}
+        {page === 'conso-subs' && (
+          <SubsidiaryMaster
+            subsidiaries={subsidiaries}
+            saveSubsidiary={saveSubsidiary}
+            deleteSubsidiary={deleteSubsidiary}
+          />
+        )}
+        {page === 'conso-fx' && (
+          <FxRates
+            fxRates={fxRates}
+            saveFxRate={saveFxRate}
+            deleteFxRate={deleteFxRate}
+          />
+        )}
+        {page === 'conso-pkg' && (
+          <ConsolidationPackage
+            subsidiaries={subsidiaries}
+            packages={packages}
+            savePackage={savePackage}
+            deletePackage={deletePackage}
+            getPackage={getPackage}
+            fxRates={fxRates}
+            getFxRate={getFxRate}
+            currentUser={currentUser}
+          />
+        )}
+        {page === 'conso-elim' && (
+          <Eliminations
+            eliminations={eliminations}
+            saveElimination={saveElimination}
+            deleteElimination={deleteElimination}
+            subsidiaries={subsidiaries}
+          />
+        )}
+        {page === 'conso-fs' && (
+          <ConsolidatedFS
+            journals={journals}
+            accounts={activeAccounts}
+            subsidiaries={subsidiaries}
+            packages={packages}
+            eliminations={eliminations}
+            periodCtx={periodCtx}
+          />
         )}
       </main>
 

@@ -2971,3 +2971,187 @@ input, select { font-family: inherit; }
    J-SOX フッターバッジ
    ================================================================ */
 .app-footer-ebadge--sox { background: #1d4ed8; }
+
+/* ================================================================
+   連結会計 (Consolidation)
+   ================================================================ */
+
+/* 通貨バッジ */
+.conso-currency-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.conso-currency-name { font-size: 12px; color: var(--c-text-2); }
+
+/* 持分比率バッジ */
+.conso-pct-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #bbf7d0;
+}
+
+/* パッケージステータスバッジ */
+.pkg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pkg-badge--none      { background: #f1f5f9; color: #94a3b8; }
+.pkg-badge--draft     { background: #f1f5f9; color: #64748b; }
+.pkg-badge--submitted { background: #fef9c3; color: #92400e; }
+.pkg-badge--approved  { background: #d1fae5; color: #065f46; }
+.pkg-badge--confirmed { background: #dbeafe; color: #1e40af; }
+
+/* 連結パッケージ 選択行 */
+.conso-pkg-selector {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.conso-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border);
+  flex-wrap: wrap;
+}
+
+.conso-due-date { font-size: 14px; font-weight: 600; color: var(--c-text); }
+
+.conso-warn-rate {
+  font-size: 12px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.conso-pkg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.conso-no-rate { color: var(--c-text-muted); font-size: 12px; }
+
+.conso-jpy-cell { font-weight: 600; color: var(--c-primary); }
+
+.conso-actype-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  font-size: 11px;
+  color: var(--c-text-2);
+}
+
+/* 相殺消去バッジ */
+.elim-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.elim-badge--rp     { background: #ede9fe; color: #5b21b6; }
+.elim-badge--re     { background: #fce7f3; color: #9d174d; }
+.elim-badge--custom { background: #f1f5f9; color: #475569; }
+.elim-auto-badge    { font-size: 10px; color: var(--c-text-muted); margin-left: 4px; }
+
+.elim-entry-side { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.elim-company    { font-size: 11px; color: var(--c-text-muted); }
+
+.elim-dr-cr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 12px;
+  background: var(--c-bg);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+.elim-side-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-2);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+/* 連結財務諸表 */
+.cfs-layout { max-width: 1100px; }
+
+.cfs-section { margin-bottom: 20px; }
+.cfs-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text-2);
+  padding: 6px 12px;
+  background: var(--c-bg);
+  border-left: 3px solid var(--c-primary);
+  margin-bottom: 4px;
+}
+
+.cfs-elim-cell { color: var(--c-error); font-size: 13px; }
+.cfs-total-cell { font-weight: 700; color: var(--c-primary); }
+
+.cfs-net-income {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--c-primary-light);
+  border-radius: var(--radius);
+  margin-top: 12px;
+}
+.cfs-ni-label { font-size: 15px; font-weight: 700; color: var(--c-primary); }
+.cfs-ni-value { font-size: 22px; font-weight: 700; color: var(--c-primary); }
+.cfs-ni-value--loss { color: var(--c-error); }
+
+.cfs-pkg-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+.cfs-pkg-label  { font-size: 13px; }
+.cfs-pkg-pending { color: var(--c-warning); font-weight: 600; }
+
+.cfs-sub-detail {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-left: 4px;
+}
+
+/* input sm overrides for package table */
+.je-input--sm  { padding: 4px 8px; font-size: 12px; height: 30px; }
+.je-select--sm { padding: 4px 8px; font-size: 12px; height: 30px; }
