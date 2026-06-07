@@ -1,5 +1,11 @@
 const ts = new Date().toISOString()
 
+export const SAMPLE_USERS = [
+  { id: 'USR-001', name: '山田 太郎',   role: 'USER',     isActive: true, createdAt: ts },
+  { id: 'USR-002', name: '鈴木 花子',   role: 'APPROVER', isActive: true, createdAt: ts },
+  { id: 'USR-003', name: '田中 管理者', role: 'ADMIN',    isActive: true, createdAt: ts },
+]
+
 export const SAMPLE_COMPANIES = [
   {
     id: 'CO-001',

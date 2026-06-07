@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { getAccountByCode } from '../data/accounts'
 import { downloadCsv, todayStamp } from '../utils/csv'
 import PeriodSelector from './PeriodSelector'
+import { APPROVAL_STATUS } from '../hooks/useApprovals'
 
 const TYPE_LABELS = {
   NORMAL: '通常', MONTHLY: '月次', CLOSING: '決算', OPENING: '期首', ADJUST: '修正',
@@ -38,7 +39,8 @@ function accountName(code, accounts) {
   return accounts.find(a => a.code === code)?.name || getAccountByCode(code)?.name || code
 }
 
-export default function JournalList({ journals, onNew, onEdit, onDelete, onReset, accounts = [], periodCtx }) {
+export default function JournalList({ journals, onNew, onEdit, onDelete, onReset, accounts = [], periodCtx,
+  approvals = [], currentUser = null, onRequestApproval }) {
   const [keyword, setKeyword] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -47,6 +49,12 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
   const [amountMax, setAmountMax] = useState('')
 
   const periodFiltered = periodCtx ? periodCtx.periodJournals : journals
+
+  const approvalMap = useMemo(() => {
+    const m = {}
+    approvals.forEach(a => { m[a.journalId] = a })
+    return m
+  }, [approvals])
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
@@ -228,6 +236,7 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
                     <th className="jl-th jl-th--debit">借方科目</th>
                     <th className="jl-th jl-th--credit">貸方科目</th>
                     <th className="jl-th jl-th--right">金額</th>
+                    <th className="jl-th jl-th--center">承認</th>
                     <th className="jl-th jl-th--center no-print">操作</th>
                   </tr>
                 </thead>
@@ -235,8 +244,15 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
                   {sorted.map((j, idx) => {
                     const { dr, cr } = summarize(j.lines)
                     const amt = totalAmt(j.lines)
+                    const apv = approvalMap[j.id]
+                    const apvStatus = apv?.status || null
+                    // DRAFT（下書き）またはレコードなし → 申請ボタン表示
+                    const isDraft = !apvStatus || apvStatus === 'DRAFT'
+                    const statusInfo = isDraft ? null : (APPROVAL_STATUS[apvStatus] || null)
+                    const isLocked = apvStatus === 'PENDING' || apvStatus === 'APPROVED'
+                    const canApply = isDraft && !!onRequestApproval && !!currentUser
                     return (
-                      <tr key={j.id} className={`jl-tr ${idx % 2 === 1 ? 'jl-tr--alt' : ''}`}>
+                      <tr key={j.id} className={`jl-tr ${idx % 2 === 1 ? 'jl-tr--alt' : ''} ${isLocked ? 'jl-tr--locked' : ''}`}>
                         <td className="jl-td jl-td--date">{fmt(j.date)}</td>
                         <td className="jl-td jl-td--voucher">{j.id}</td>
                         <td className="jl-td">
@@ -248,12 +264,30 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
                         <td className="jl-td jl-td--account jl-td--debit">{dr}</td>
                         <td className="jl-td jl-td--account jl-td--credit">{cr}</td>
                         <td className="jl-td jl-td--amount">¥{amt.toLocaleString('ja-JP')}</td>
+                        <td className="jl-td jl-td--actions">
+                          {statusInfo
+                            ? <span className={`apv-badge ${statusInfo.cls}`}>{statusInfo.label}</span>
+                            : canApply
+                              ? <button
+                                  className="jl-btn apv-btn--apply"
+                                  onClick={() => onRequestApproval(j.id, currentUser.id)}
+                                >申請</button>
+                              : <span style={{ color: 'var(--c-text-muted)', fontSize: 11 }}>—</span>
+                          }
+                        </td>
                         <td className="jl-td jl-td--actions no-print">
-                          <button className="jl-btn jl-btn--edit"   onClick={() => onEdit(j)}>編集</button>
+                          <button
+                            className="jl-btn jl-btn--edit"
+                            disabled={isLocked}
+                            title={isLocked ? '申請中・承認済の仕訳は編集できません' : undefined}
+                            onClick={() => !isLocked && onEdit(j)}
+                          >編集</button>
                           <button
                             className="jl-btn jl-btn--delete"
+                            disabled={isLocked}
+                            title={isLocked ? '申請中・承認済の仕訳は削除できません' : undefined}
                             onClick={() => {
-                              if (window.confirm(`伝票番号 ${j.id} を削除しますか？`)) onDelete(j.id)
+                              if (!isLocked && window.confirm(`伝票番号 ${j.id} を削除しますか？`)) onDelete(j.id)
                             }}
                           >削除</button>
                         </td>
