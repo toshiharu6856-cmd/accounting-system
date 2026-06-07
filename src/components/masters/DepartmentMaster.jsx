@@ -28,10 +28,11 @@ function buildSortedList(departments) {
     .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code))
 }
 
-export default function DepartmentMaster({ departments, saveDepartment, deleteDepartment }) {
+export default function DepartmentMaster({ departments, saveDepartment, deleteDepartment, logOp }) {
   const [modal,  setModal]  = useState(null)
   const [form,   setForm]   = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
+  const [reason, setReason] = useState('')
 
   const sorted = useMemo(() => buildSortedList(departments), [departments])
   const byId   = useMemo(() => Object.fromEntries(departments.map(d => [d.id, d])), [departments])
@@ -39,12 +40,14 @@ export default function DepartmentMaster({ departments, saveDepartment, deleteDe
   function openAdd() {
     setForm({ ...EMPTY_FORM, sortOrder: departments.length * 10 + 10 })
     setErrors({})
+    setReason('')
     setModal({ mode: 'add' })
   }
 
   function openEdit(dept) {
     setForm({ ...dept, parentId: dept.parentId || '' })
     setErrors({})
+    setReason('')
     setModal({ mode: 'edit', id: dept.id })
   }
 
@@ -57,16 +60,20 @@ export default function DepartmentMaster({ departments, saveDepartment, deleteDe
 
   function handleSave() {
     const errs = validate(form, departments, modal?.id)
+    if (!reason.trim()) errs.reason = '変更理由は必須です'
     if (Object.keys(errs).length) { setErrors(errs); return }
 
     const entry = {
       ...form,
-      code:     form.code.trim(),
-      name:     form.name.trim(),
-      parentId: form.parentId || null,
+      code:      form.code.trim(),
+      name:      form.name.trim(),
+      parentId:  form.parentId || null,
       sortOrder: Number(form.sortOrder) || 10,
     }
 
+    logOp?.({ type: modal.mode === 'add' ? 'CREATE' : 'UPDATE',
+      target: `dept:${entry.code}`,
+      detail: `部門${modal.mode === 'add' ? '登録' : '更新'}: ${entry.name} / 理由: ${reason}` })
     saveDepartment(modal.mode === 'add' ? entry : { ...entry, id: modal.id })
     closeModal()
   }
@@ -80,9 +87,12 @@ export default function DepartmentMaster({ departments, saveDepartment, deleteDe
       alert(`「${dept.name}」には下位部門があるため削除できません。\n先に下位部門を削除または上位部門を変更してください。`)
       return
     }
-    if (window.confirm(`「${dept.code} ${dept.name}」を削除しますか？`)) {
-      deleteDepartment(dept.id)
-    }
+    const r = window.prompt(`「${dept.code} ${dept.name}」を削除します。\n削除理由を入力してください（必須）:`)
+    if (r === null) return
+    if (!r.trim()) { alert('削除理由を入力してください'); return }
+    logOp?.({ type: 'DELETE', target: `dept:${dept.code}`,
+      detail: `部門削除: ${dept.name} / 理由: ${r}` })
+    deleteDepartment(dept.id)
   }
 
   // parent options: exclude self and its descendants
@@ -238,6 +248,19 @@ export default function DepartmentMaster({ departments, saveDepartment, deleteDe
               />
               有効
             </label>
+
+            {/* 変更理由 */}
+            <div className="je-field">
+              <label className="je-label je-label--required">変更理由</label>
+              <textarea
+                className={`je-input sox-reason-input ${errors.reason ? 'je-input--error' : ''}`}
+                value={reason}
+                onChange={e => { setReason(e.target.value); setErrors(v => { const n={...v}; delete n.reason; return n }) }}
+                placeholder="変更・登録する理由を入力してください（J-SOX内部統制要件）"
+                rows={2}
+              />
+              {errors.reason && <span className="je-field-error">{errors.reason}</span>}
+            </div>
 
             <div className="ms-modal-actions">
               <button type="button" className="je-btn je-btn--secondary" onClick={closeModal}>キャンセル</button>

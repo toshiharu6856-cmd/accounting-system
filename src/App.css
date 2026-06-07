@@ -2847,3 +2847,127 @@ input, select { font-family: inherit; }
   color: var(--c-success);
   font-weight: 600;
 }
+
+/* ================================================================
+   J-SOX 操作ログ (OpLog)
+   ================================================================ */
+.op-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.op-badge--login   { background: #dbeafe; color: #1d4ed8; }
+.op-badge--logout  { background: #f3f4f6; color: #6b7280; }
+.op-badge--create  { background: #dcfce7; color: #15803d; }
+.op-badge--update  { background: #fef9c3; color: #92400e; }
+.op-badge--delete  { background: #fee2e2; color: #b91c1c; }
+.op-badge--approve { background: #d1fae5; color: #065f46; }
+.op-badge--reject  { background: #ffe4e6; color: #9f1239; }
+.op-badge--export  { background: #ede9fe; color: #5b21b6; }
+
+.oplog-toolbar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+.oplog-filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.oplog-filter-label { font-size: 12px; color: var(--c-text-2); white-space: nowrap; }
+.oplog-target-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+
+/* ================================================================
+   J-SOX 内部統制ダッシュボード (ICSoxDashboard)
+   ================================================================ */
+.sox-dash { max-width: 1100px; }
+
+.sox-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sox-kpi-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sox-kpi-card__label {
+  font-size: 13px;
+  color: var(--c-text-2);
+  margin-bottom: 8px;
+}
+
+.sox-kpi-card__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1;
+}
+
+.sox-kpi-card__value--alert { color: var(--c-error); }
+.sox-kpi-card__value--warn  { color: var(--c-warning); }
+
+.sox-kpi-card__sub {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: 6px;
+}
+
+.sox-alert-section { margin-bottom: 24px; }
+.sox-alert-title { font-size: 14px; font-weight: 600; color: var(--c-text); margin-bottom: 8px; }
+
+.sox-alert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.sox-alert-item--error   { background: var(--c-error-light);   border: 1px solid #fca5a5; color: #991b1b; }
+.sox-alert-item--warning { background: #fffbeb;                 border: 1px solid #fcd34d; color: #78350f; }
+.sox-alert-none          { font-size: 13px; color: var(--c-text-muted); padding: 8px 0; }
+
+.sox-section { margin-bottom: 24px; }
+.sox-section-title { font-size: 14px; font-weight: 600; color: var(--c-text); margin-bottom: 12px; }
+
+.sox-quick-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.sox-quick-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.sox-quick-btn:hover { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary); }
+
+/* ================================================================
+   J-SOX 変更理由入力
+   ================================================================ */
+.sox-reason-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 52px;
+  font-family: inherit;
+}
+
+/* ================================================================
+   J-SOX フッターバッジ
+   ================================================================ */
+.app-footer-ebadge--sox { background: #1d4ed8; }

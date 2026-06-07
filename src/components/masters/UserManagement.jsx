@@ -33,16 +33,18 @@ const ROLE_BADGE = {
   ADMIN:    'apv-role--admin',
 }
 
-export default function UserManagement({ users, saveUser, deleteUser, currentUser }) {
+export default function UserManagement({ users, saveUser, deleteUser, currentUser, logOp }) {
   const [modal,    setModal]    = useState(null)
   const [form,     setForm]     = useState(EMPTY_FORM)
   const [errors,   setErrors]   = useState({})
   const [showPass, setShowPass] = useState(false)
+  const [reason,   setReason]   = useState('')
 
   function openAdd() {
     setForm(EMPTY_FORM)
     setErrors({})
     setShowPass(false)
+    setReason('')
     setModal({ mode: 'add' })
   }
 
@@ -50,6 +52,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
     setForm({ ...EMPTY_FORM, ...u, password: '' })  // パスワードは再入力
     setErrors({})
     setShowPass(false)
+    setReason('')
     setModal({ mode: 'edit', id: u.id })
   }
 
@@ -60,6 +63,7 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
 
   function handleSave() {
     const errs = validate(form, users, modal?.id)
+    if (!reason.trim()) errs.reason = '変更理由は必須です'
     if (Object.keys(errs).length) { setErrors(errs); return }
 
     let item
@@ -75,13 +79,21 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
         password: form.password.trim() || existing?.password || '',
       }
     }
+    logOp?.({ type: modal.mode === 'add' ? 'CREATE' : 'UPDATE',
+      target: `user:${item.email}`,
+      detail: `ユーザー${modal.mode === 'add' ? '登録' : '更新'}: ${item.name} (${item.role}) / 理由: ${reason}` })
     saveUser(item)
     setModal(null)
   }
 
   function handleDelete(u) {
     if (u.id === currentUser?.id) { alert('現在ログイン中のユーザーは削除できません'); return }
-    if (window.confirm(`「${u.name}」を削除しますか？`)) deleteUser(u.id)
+    const r = window.prompt(`「${u.name}」を削除します。\n削除理由を入力してください（必須）:`)
+    if (r === null) return
+    if (!r.trim()) { alert('削除理由を入力してください'); return }
+    logOp?.({ type: 'DELETE', target: `user:${u.email}`,
+      detail: `ユーザー削除: ${u.name} / 理由: ${r}` })
+    deleteUser(u.id)
   }
 
   const roleName = code => ROLES.find(r => r.code === code)?.name || code
@@ -231,6 +243,19 @@ export default function UserManagement({ users, saveUser, deleteUser, currentUse
                 <input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} />
                 有効
               </label>
+            </div>
+
+            {/* 変更理由 */}
+            <div className="je-field">
+              <label className="je-label je-label--required">変更理由</label>
+              <textarea
+                className={`je-input sox-reason-input ${errors.reason ? 'je-input--error' : ''}`}
+                value={reason}
+                onChange={e => { setReason(e.target.value); setErrors(v => { const n={...v}; delete n.reason; return n }) }}
+                placeholder="変更・登録する理由を入力してください（J-SOX内部統制要件）"
+                rows={2}
+              />
+              {errors.reason && <span className="je-field-error">{errors.reason}</span>}
             </div>
 
             <div className="ms-modal-actions">

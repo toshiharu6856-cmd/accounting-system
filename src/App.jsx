@@ -7,6 +7,7 @@ import { useUsers }         from './hooks/useUsers'
 import { useApprovals }     from './hooks/useApprovals'
 import { useAuth }          from './hooks/useAuth'
 import { useAuditLog }      from './hooks/useAuditLog'
+import { useOpLog }         from './hooks/useOpLog'
 import JournalList          from './components/JournalList'
 import JournalEntry         from './components/JournalEntry'
 import GeneralLedger        from './components/GeneralLedger'
@@ -18,6 +19,8 @@ import ApprovalInbox        from './components/ApprovalInbox'
 import MyApprovals          from './components/MyApprovals'
 import InvoiceSummary       from './components/InvoiceSummary'
 import AuditHistory         from './components/AuditHistory'
+import OpLog                from './components/OpLog'
+import ICSoxDashboard       from './components/ICSoxDashboard'
 import LoginScreen          from './components/LoginScreen'
 import CompanyMaster        from './components/masters/CompanyMaster'
 import AccountMaster        from './components/masters/AccountMaster'
@@ -28,7 +31,7 @@ import UserManagement       from './components/masters/UserManagement'
 const ALLOWED_PAGES = {
   USER:     new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'myapprovals']),
   APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'audithistory']),
-  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt', 'audithistory']),
+  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt', 'audithistory', 'jsoxdash', 'oplog']),
 }
 
 const ALL_MAIN_PAGES = [
@@ -49,8 +52,14 @@ const MASTER_PAGES = [
   { id: 'usermgmt',   label: 'ユーザー管理'  },
 ]
 
+const SOX_PAGES = [
+  { id: 'jsoxdash', label: '内部統制ダッシュボード' },
+  { id: 'oplog',    label: '操作ログ照会'           },
+]
+
 const MASTER_IDS   = new Set(MASTER_PAGES.map(p => p.id))
 const APPROVAL_IDS = new Set(['approvalinbox', 'myapprovals'])
+const SOX_IDS      = new Set(SOX_PAGES.map(p => p.id))
 
 const ROLE_LABELS = { USER: '一般', APPROVER: '承認者', ADMIN: '管理者' }
 
@@ -59,8 +68,10 @@ export default function App() {
   const [editingJournal, setEditingJournal] = useState(null)
   const [masterOpen,     setMasterOpen]     = useState(false)
   const [approvalOpen,   setApprovalOpen]   = useState(false)
+  const [soxOpen,        setSoxOpen]        = useState(false)
   const dropdownRef = useRef(null)
   const apvDropRef  = useRef(null)
+  const soxDropRef  = useRef(null)
 
   const { journals, saveJournal, deleteJournal, resetToSample } = useJournals()
   const {
@@ -73,6 +84,15 @@ export default function App() {
   const { approvals, requestApproval, approveJournal, rejectJournal, withdrawApproval } = useApprovals()
   const { isLoggedIn, currentUser, login, logout }            = useAuth(users)
   const { logs: auditLogs, addLog, getLogsForJournal }        = useAuditLog()
+  const { logs: opLogs, addOpLog }                            = useOpLog()
+
+  function logOp(entry) {
+    addOpLog({
+      ...entry,
+      userId:   entry.userId   ?? currentUser?.id   ?? '',
+      userName: entry.userName ?? currentUser?.name ?? '',
+    })
+  }
 
   const role       = currentUser?.role || 'USER'
   const allowed    = ALLOWED_PAGES[role] || ALLOWED_PAGES.USER
@@ -95,6 +115,7 @@ export default function App() {
     function handler(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setMasterOpen(false)
       if (apvDropRef.current  && !apvDropRef.current.contains(e.target))  setApprovalOpen(false)
+      if (soxDropRef.current  && !soxDropRef.current.contains(e.target))  setSoxOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -106,6 +127,7 @@ export default function App() {
     setEditingJournal(null)
     setMasterOpen(false)
     setApprovalOpen(false)
+    setSoxOpen(false)
   }
 
   function handleNew() {
@@ -128,6 +150,13 @@ export default function App() {
       before:    existing || null,
       after:     journal,
     })
+    addOpLog({
+      type:     existing ? 'UPDATE' : 'CREATE',
+      userId:   currentUser?.id   || '',
+      userName: currentUser?.name || '',
+      target:   `journal:${journal.id}`,
+      detail:   `仕訳${existing ? '更新' : '登録'}: ${journal.description || journal.id}`,
+    })
     saveJournal(journal)
     setPage('list')
     setEditingJournal(null)
@@ -144,12 +173,65 @@ export default function App() {
         before:    journal,
         after:     null,
       })
+      addOpLog({
+        type:     'DELETE',
+        userId:   currentUser?.id   || '',
+        userName: currentUser?.name || '',
+        target:   `journal:${id}`,
+        detail:   `仕訳削除: ${journal.description || id}`,
+      })
     }
     deleteJournal(id)
   }
 
+  function handleApproveJournal(approvalId, userId, comment) {
+    approveJournal(approvalId, userId, comment)
+    const apv = approvals.find(a => a.id === approvalId)
+    addOpLog({
+      type:     'APPROVE',
+      userId:   currentUser?.id   || '',
+      userName: currentUser?.name || '',
+      target:   `approval:${approvalId}`,
+      detail:   `承認: 伝票 ${apv?.journalId || approvalId}${comment ? ` / コメント: ${comment}` : ''}`,
+    })
+  }
+
+  function handleRejectJournal(approvalId, userId, comment) {
+    rejectJournal(approvalId, userId, comment)
+    const apv = approvals.find(a => a.id === approvalId)
+    addOpLog({
+      type:     'REJECT',
+      userId:   currentUser?.id   || '',
+      userName: currentUser?.name || '',
+      target:   `approval:${approvalId}`,
+      detail:   `却下: 伝票 ${apv?.journalId || approvalId} / コメント: ${comment}`,
+    })
+  }
+
+  function handleLogin(email, password) {
+    const result = login(email, password)
+    if (result.ok) {
+      const u = users.find(u => u.email?.trim().toLowerCase() === email.trim().toLowerCase())
+      addOpLog({
+        type:     'LOGIN',
+        userId:   u?.id   || '',
+        userName: u?.name || '',
+        target:   'auth',
+        detail:   `ログイン: ${email}`,
+      })
+    }
+    return result
+  }
+
   function handleLogout() {
     if (window.confirm('ログアウトしますか？')) {
+      addOpLog({
+        type:     'LOGOUT',
+        userId:   currentUser?.id   || '',
+        userName: currentUser?.name || '',
+        target:   'auth',
+        detail:   `ログアウト: ${currentUser?.email || ''}`,
+      })
       logout()
       setPage('list')
       setEditingJournal(null)
@@ -158,11 +240,12 @@ export default function App() {
 
   // 未ログインはログイン画面を表示
   if (!isLoggedIn) {
-    return <LoginScreen onLogin={login} />
+    return <LoginScreen onLogin={handleLogin} />
   }
 
   const isMasterPage   = MASTER_IDS.has(page)
   const isApprovalPage = APPROVAL_IDS.has(page)
+  const isSoxPage      = SOX_IDS.has(page)
   const visibleMain    = ALL_MAIN_PAGES.filter(p => allowed.has(p.id))
 
   return (
@@ -216,6 +299,31 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {/* J-SOX内部統制（管理者のみ） */}
+            {isAdmin && (
+              <div className="app-dropdown" ref={soxDropRef}>
+                <button
+                  className={`app-nav-btn app-nav-btn--dropdown ${isSoxPage || soxOpen ? 'app-nav-btn--active' : ''}`}
+                  onClick={() => setSoxOpen(v => !v)}
+                >
+                  内部統制 <span className="app-dropdown-chevron">{soxOpen ? '▲' : '▼'}</span>
+                </button>
+                {soxOpen && (
+                  <div className="app-dropdown-menu">
+                    {SOX_PAGES.map(p => (
+                      <button
+                        key={p.id}
+                        className={`app-dropdown-item ${page === p.id ? 'app-dropdown-item--active' : ''}`}
+                        onClick={() => goTo(p.id)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* マスタ管理（管理者のみ） */}
             {isAdmin && (
@@ -336,8 +444,8 @@ export default function App() {
             journals={journals}
             users={users}
             currentUser={currentUser}
-            onApprove={approveJournal}
-            onReject={rejectJournal}
+            onApprove={handleApproveJournal}
+            onReject={handleRejectJournal}
           />
         )}
         {page === 'myapprovals' && (
@@ -363,6 +471,7 @@ export default function App() {
             accounts={accounts}
             saveAccount={saveAccount}
             deleteAccount={deleteAccount}
+            logOp={logOp}
           />
         )}
         {page === 'deptmaster' && (
@@ -370,6 +479,7 @@ export default function App() {
             departments={departments}
             saveDepartment={saveDepartment}
             deleteDepartment={deleteDepartment}
+            logOp={logOp}
           />
         )}
         {page === 'usermgmt' && (
@@ -378,12 +488,25 @@ export default function App() {
             saveUser={saveUser}
             deleteUser={deleteUser}
             currentUser={currentUser}
+            logOp={logOp}
           />
+        )}
+        {page === 'jsoxdash' && (
+          <ICSoxDashboard
+            approvals={approvals}
+            journals={journals}
+            opLogs={opLogs}
+            onNavigate={goTo}
+          />
+        )}
+        {page === 'oplog' && (
+          <OpLog logs={opLogs} users={users} />
         )}
       </main>
 
       <footer className="app-footer no-print">
         <span className="app-footer-ebadge">電子帳簿保存法対応</span>
+        <span className="app-footer-ebadge app-footer-ebadge--sox">J-SOX内部統制対応</span>
         <span className="app-footer-copy">会計システム &copy; {new Date().getFullYear()}</span>
       </footer>
     </div>

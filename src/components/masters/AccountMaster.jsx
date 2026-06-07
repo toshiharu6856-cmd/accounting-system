@@ -44,13 +44,14 @@ function CategoryTabs({ selected, onChange }) {
   )
 }
 
-export default function AccountMaster({ accounts, saveAccount, deleteAccount }) {
+export default function AccountMaster({ accounts, saveAccount, deleteAccount, logOp }) {
   const [catFilter, setCatFilter] = useState('')
   const [search,    setSearch]    = useState('')
   const [modal,     setModal]     = useState(null)
   const [form,      setForm]      = useState(EMPTY_FORM)
   const [errors,    setErrors]    = useState({})
   const [newSub,    setNewSub]    = useState({ code: '', name: '' })
+  const [reason,    setReason]    = useState('')
 
   const displayed = accounts.filter(a => {
     if (catFilter && a.category !== catFilter) return false
@@ -62,6 +63,7 @@ export default function AccountMaster({ accounts, saveAccount, deleteAccount }) 
     setForm({ ...EMPTY_FORM, subAccounts: [] })
     setErrors({})
     setNewSub({ code: '', name: '' })
+    setReason('')
     setModal({ mode: 'add' })
   }
 
@@ -69,6 +71,7 @@ export default function AccountMaster({ accounts, saveAccount, deleteAccount }) 
     setForm({ ...acc, subAccounts: [...(acc.subAccounts || [])] })
     setErrors({})
     setNewSub({ code: '', name: '' })
+    setReason('')
     setModal({ mode: 'edit', id: acc.id })
   }
 
@@ -85,18 +88,25 @@ export default function AccountMaster({ accounts, saveAccount, deleteAccount }) 
 
   function handleSave() {
     const errs = validate(form, accounts, modal?.id)
+    if (!reason.trim()) errs.reason = '変更理由は必須です'
     if (Object.keys(errs).length) { setErrors(errs); return }
-    saveAccount(
-      modal.mode === 'add'
-        ? { ...form, code: form.code.trim(), name: form.name.trim() }
-        : { ...form, id: modal.id, code: form.code.trim(), name: form.name.trim() }
-    )
+    const item = modal.mode === 'add'
+      ? { ...form, code: form.code.trim(), name: form.name.trim() }
+      : { ...form, id: modal.id, code: form.code.trim(), name: form.name.trim() }
+    logOp?.({ type: modal.mode === 'add' ? 'CREATE' : 'UPDATE',
+      target: `account:${item.code}`,
+      detail: `勘定科目${modal.mode === 'add' ? '登録' : '更新'}: ${item.name} / 理由: ${reason}` })
+    saveAccount(item)
     closeModal()
   }
 
   function handleDelete(acc) {
-    if (window.confirm(`「${acc.code} ${acc.name}」を削除しますか？\n仕訳で使用している場合、科目名が表示されなくなります。`))
-      deleteAccount(acc.id)
+    const r = window.prompt(`「${acc.code} ${acc.name}」を削除します。\n削除理由を入力してください（必須）:`)
+    if (r === null) return
+    if (!r.trim()) { alert('削除理由を入力してください'); return }
+    logOp?.({ type: 'DELETE', target: `account:${acc.code}`,
+      detail: `勘定科目削除: ${acc.name} / 理由: ${r}` })
+    deleteAccount(acc.id)
   }
 
   // Sub-account management
@@ -316,6 +326,19 @@ export default function AccountMaster({ accounts, saveAccount, deleteAccount }) 
                   disabled={!newSub.code.trim() || !newSub.name.trim()}
                 >＋追加</button>
               </div>
+            </div>
+
+            {/* 変更理由 */}
+            <div className="je-field">
+              <label className="je-label je-label--required">変更理由</label>
+              <textarea
+                className={`je-input sox-reason-input ${errors.reason ? 'je-input--error' : ''}`}
+                value={reason}
+                onChange={e => { setReason(e.target.value); setErrors(v => { const n={...v}; delete n.reason; return n }) }}
+                placeholder="変更・登録する理由を入力してください（J-SOX内部統制要件）"
+                rows={2}
+              />
+              {errors.reason && <span className="je-field-error">{errors.reason}</span>}
             </div>
 
             <div className="ms-modal-actions">

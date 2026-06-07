@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import Modal from './masters/Modal'
 import { APPROVAL_STATUS } from '../hooks/useApprovals'
+import { downloadCsv, todayStamp } from '../utils/csv'
 
 function fmt(d) { return d?.replace(/-/g, '/') || '' }
 function fmtTs(ts) {
@@ -22,10 +23,12 @@ const STATUS_FILTER_OPTIONS = [
 ]
 
 export default function ApprovalInbox({ approvals, journals, users, currentUser, onApprove, onReject }) {
-  const [statusFilter, setStatusFilter] = useState('PENDING')
-  const [rejectModal,  setRejectModal]  = useState(null)  // { approvalId, journalId }
-  const [rejectComment, setRejectComment] = useState('')
-  const [commentError,  setCommentError]  = useState('')
+  const [statusFilter,   setStatusFilter]   = useState('PENDING')
+  const [approveModal,   setApproveModal]   = useState(null)  // { approvalId, journalId }
+  const [approveComment, setApproveComment] = useState('')
+  const [rejectModal,    setRejectModal]    = useState(null)  // { approvalId, journalId }
+  const [rejectComment,  setRejectComment]  = useState('')
+  const [commentError,   setCommentError]   = useState('')
 
   const canApproveReject = currentUser?.role === 'APPROVER' || currentUser?.role === 'ADMIN'
 
@@ -47,9 +50,14 @@ export default function ApprovalInbox({ approvals, journals, users, currentUser,
       .sort((a, b) => (b.requestedAt || '').localeCompare(a.requestedAt || ''))
   }, [approvals, statusFilter])
 
-  function handleApprove(apv) {
-    if (!window.confirm(`伝票 ${apv.journalId} を承認しますか？`)) return
-    onApprove(apv.id, currentUser.id)
+  function openApprove(apv) {
+    setApproveModal({ approvalId: apv.id, journalId: apv.journalId })
+    setApproveComment('')
+  }
+
+  function handleApprove() {
+    onApprove(approveModal.approvalId, currentUser.id, approveComment.trim())
+    setApproveModal(null)
   }
 
   function openReject(apv) {
@@ -62,6 +70,28 @@ export default function ApprovalInbox({ approvals, journals, users, currentUser,
     if (!rejectComment.trim()) { setCommentError('却下コメントは必須です'); return }
     onReject(rejectModal.approvalId, currentUser.id, rejectComment.trim())
     setRejectModal(null)
+  }
+
+  function exportCsv() {
+    const header = ['ステータス', '伝票番号', '摘要', '金額', '申請者', '申請日時', '審査者', '審査日時', '承認コメント', '却下コメント']
+    const rows = filtered.map(apv => {
+      const j = journalMap[apv.journalId]
+      const reqUser = userMap[apv.requestedBy]
+      const revUser = userMap[apv.reviewedBy]
+      return [
+        APPROVAL_STATUS[apv.status]?.label || apv.status,
+        apv.journalId,
+        j?.description || '',
+        j ? totalAmt(j.lines) : '',
+        reqUser?.name || apv.requestedBy || '',
+        fmtTs(apv.requestedAt),
+        revUser?.name || apv.reviewedBy || '',
+        fmtTs(apv.reviewedAt),
+        apv.approveComment || '',
+        apv.comment        || '',
+      ]
+    })
+    downloadCsv(`承認履歴_${todayStamp()}.csv`, [header, ...rows])
   }
 
   const st = APPROVAL_STATUS
@@ -101,6 +131,10 @@ export default function ApprovalInbox({ approvals, journals, users, currentUser,
             </button>
           ))}
         </div>
+        <button className="je-btn je-btn--outline" style={{ marginLeft: 'auto' }}
+          onClick={exportCsv} disabled={filtered.length === 0}>
+          📄 CSV出力
+        </button>
       </div>
 
       <section className="je-card">
@@ -154,7 +188,7 @@ export default function ApprovalInbox({ approvals, journals, users, currentUser,
                               <span className="apv-self-note">自己承認不可</span>
                             ) : (
                               <>
-                                <button className="jl-btn apv-btn--approve" onClick={() => handleApprove(apv)}>承認</button>
+                                <button className="jl-btn apv-btn--approve" onClick={() => openApprove(apv)}>承認</button>
                                 <button className="jl-btn apv-btn--reject"  onClick={() => openReject(apv)}>却下</button>
                               </>
                             )
@@ -170,6 +204,30 @@ export default function ApprovalInbox({ approvals, journals, users, currentUser,
           </div>
         )}
       </section>
+
+      {approveModal && (
+        <Modal title="承認確認" onClose={() => setApproveModal(null)} size="sm">
+          <div className="ms-form">
+            <p style={{ fontSize: 13, color: 'var(--c-text-2)', marginBottom: 8 }}>
+              伝票 <strong>{approveModal.journalId}</strong> を承認します。
+            </p>
+            <div className="je-field">
+              <label className="je-label">承認コメント（任意）</label>
+              <textarea
+                className="je-input apv-textarea"
+                value={approveComment}
+                onChange={e => setApproveComment(e.target.value)}
+                placeholder="承認理由・コメントがあれば入力してください"
+                rows={3}
+              />
+            </div>
+            <div className="ms-modal-actions">
+              <button className="je-btn je-btn--secondary" onClick={() => setApproveModal(null)}>キャンセル</button>
+              <button className="je-btn apv-btn--approve" onClick={handleApprove}>承認する</button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {rejectModal && (
         <Modal title="却下コメントを入力" onClose={() => setRejectModal(null)} size="sm">

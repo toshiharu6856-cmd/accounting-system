@@ -63,14 +63,15 @@ export function useApprovals() {
     })
   }
 
-  function approveJournal(approvalId, userId) {
+  function approveJournal(approvalId, userId, comment = '') {
     const ts = new Date().toISOString()
     setApprovals(prev => prev.map(a => a.id !== approvalId ? a : {
       ...a,
-      status:     'APPROVED',
-      reviewedBy: userId,
-      reviewedAt: ts,
-      history:    [...(a.history || []), { status: 'APPROVED', userId, at: ts, comment: null }],
+      status:       'APPROVED',
+      reviewedBy:   userId,
+      reviewedAt:   ts,
+      approveComment: comment || null,
+      history:      [...(a.history || []), { status: 'APPROVED', userId, at: ts, comment: comment || null }],
     }))
   }
 
