@@ -6,6 +6,7 @@ import { useBudget }        from './hooks/useBudget'
 import { useUsers }         from './hooks/useUsers'
 import { useApprovals }     from './hooks/useApprovals'
 import { useAuth }          from './hooks/useAuth'
+import { useAuditLog }      from './hooks/useAuditLog'
 import JournalList          from './components/JournalList'
 import JournalEntry         from './components/JournalEntry'
 import GeneralLedger        from './components/GeneralLedger'
@@ -16,6 +17,7 @@ import BudgetManagement     from './components/BudgetManagement'
 import ApprovalInbox        from './components/ApprovalInbox'
 import MyApprovals          from './components/MyApprovals'
 import InvoiceSummary       from './components/InvoiceSummary'
+import AuditHistory         from './components/AuditHistory'
 import LoginScreen          from './components/LoginScreen'
 import CompanyMaster        from './components/masters/CompanyMaster'
 import AccountMaster        from './components/masters/AccountMaster'
@@ -25,8 +27,8 @@ import UserManagement       from './components/masters/UserManagement'
 // 役割ごとのアクセス可能ページ
 const ALLOWED_PAGES = {
   USER:     new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'myapprovals']),
-  APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox']),
-  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt']),
+  APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'audithistory']),
+  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt', 'audithistory']),
 }
 
 const ALL_MAIN_PAGES = [
@@ -36,7 +38,8 @@ const ALL_MAIN_PAGES = [
   { id: 'bs',      label: '貸借対照表'  },
   { id: 'deptpl',  label: '部門別損益'  },
   { id: 'budget',  label: '予算管理'   },
-  { id: 'invoice', label: 'インボイス'  },
+  { id: 'invoice',      label: 'インボイス'   },
+  { id: 'audithistory', label: '訂正削除履歴' },
 ]
 
 const MASTER_PAGES = [
@@ -69,6 +72,7 @@ export default function App() {
   const { users, saveUser, deleteUser }                        = useUsers()
   const { approvals, requestApproval, approveJournal, rejectJournal, withdrawApproval } = useApprovals()
   const { isLoggedIn, currentUser, login, logout }            = useAuth(users)
+  const { logs: auditLogs, addLog, getLogsForJournal }        = useAuditLog()
 
   const role       = currentUser?.role || 'USER'
   const allowed    = ALLOWED_PAGES[role] || ALLOWED_PAGES.USER
@@ -115,8 +119,33 @@ export default function App() {
   }
 
   function handleSave(journal) {
+    const existing = journals.find(j => j.id === journal.id)
+    addLog({
+      type:      existing ? 'EDIT' : 'CREATE',
+      journalId: journal.id,
+      userId:    currentUser?.id   || '',
+      userName:  currentUser?.name || '',
+      before:    existing || null,
+      after:     journal,
+    })
     saveJournal(journal)
     setPage('list')
+    setEditingJournal(null)
+  }
+
+  function handleDelete(id) {
+    const journal = journals.find(j => j.id === id)
+    if (journal) {
+      addLog({
+        type:      'DELETE',
+        journalId: id,
+        userId:    currentUser?.id   || '',
+        userName:  currentUser?.name || '',
+        before:    journal,
+        after:     null,
+      })
+    }
+    deleteJournal(id)
   }
 
   function handleLogout() {
@@ -231,7 +260,7 @@ export default function App() {
             journals={journals}
             onNew={handleNew}
             onEdit={handleEdit}
-            onDelete={deleteJournal}
+            onDelete={handleDelete}
             onReset={resetToSample}
             accounts={activeAccounts}
             periodCtx={periodCtx}
@@ -247,6 +276,7 @@ export default function App() {
             onCancel={() => setPage('list')}
             accounts={activeAccounts}
             departments={departments}
+            auditLogs={editingJournal ? getLogsForJournal(editingJournal.id) : []}
           />
         )}
         {page === 'ledger' && (
@@ -296,6 +326,9 @@ export default function App() {
             journals={journals}
             periodCtx={periodCtx}
           />
+        )}
+        {page === 'audithistory' && (
+          <AuditHistory logs={auditLogs} />
         )}
         {page === 'approvalinbox' && (
           <ApprovalInbox
@@ -348,6 +381,11 @@ export default function App() {
           />
         )}
       </main>
+
+      <footer className="app-footer no-print">
+        <span className="app-footer-ebadge">電子帳簿保存法対応</span>
+        <span className="app-footer-copy">会計システム &copy; {new Date().getFullYear()}</span>
+      </footer>
     </div>
   )
 }

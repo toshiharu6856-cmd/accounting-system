@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import AccountSelect from './AccountSelect'
 import {
   TAX_CATEGORIES, TRANSITIONAL_MEASURES, INVOICE_DEFAULTS,
   validateInvoiceNo, calcTax, calcInputCredit,
 } from '../data/invoiceConstants'
+import { LOG_TYPES } from '../hooks/useAuditLog'
 
 const VOUCHER_TYPES = [
   { code: '',        name: '--- 選択してください ---' },
@@ -47,8 +48,87 @@ function amtToStr(v) {
   return n > 0 ? n.toLocaleString('ja-JP') : ''
 }
 
-export default function JournalEntry({ initialData = null, onSave, onCancel, accounts, departments = [] }) {
+function pad(n) { return String(n).padStart(2, '0') }
+function fmtDT(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function fmtDateSlash(s) { return s?.replace(/-/g, '/') || '—' }
+function histTotal(j) {
+  return (j?.lines || []).reduce((s, l) => {
+    const n = typeof l.debitAmount === 'number' ? l.debitAmount
+            : parseFloat(String(l.debitAmount).replace(/,/g, '')) || 0
+    return s + n
+  }, 0)
+}
+function getChanges(before, after) {
+  if (!before || !after) return []
+  const rows = []
+  if (before.date !== after.date)
+    rows.push({ f: '日付',     b: fmtDateSlash(before.date),      a: fmtDateSlash(after.date) })
+  if ((before.description||'') !== (after.description||''))
+    rows.push({ f: '摘要',     b: before.description||'（空）',   a: after.description||'（空）' })
+  if ((before.voucherType||'') !== (after.voucherType||''))
+    rows.push({ f: '伝票種別', b: before.voucherType||'—',        a: after.voucherType||'—' })
+  if ((before.deptCode||'') !== (after.deptCode||''))
+    rows.push({ f: '部門',     b: before.deptCode||'—',           a: after.deptCode||'—' })
+  const bA = histTotal(before), aA = histTotal(after)
+  if (bA !== aA) rows.push({ f: '金額', b: `¥${bA.toLocaleString('ja-JP')}`, a: `¥${aA.toLocaleString('ja-JP')}` })
+  return rows
+}
+
+function HistLogEntry({ log }) {
+  const [open, setOpen] = useState(false)
+  const typeInfo = LOG_TYPES[log.type] || { label: log.type, cls: '' }
+  const changes  = log.type === 'EDIT' ? getChanges(log.before, log.after) : []
+
+  return (
+    <div className={`hist-entry hist-entry--${log.type.toLowerCase()}`}>
+      <div className="hist-entry-header">
+        <span className={`audit-badge ${typeInfo.cls}`}>{typeInfo.label}</span>
+        <span className="hist-entry-time">{fmtDT(log.recordedAt)}</span>
+        <span className="hist-entry-user">{log.userName || log.userId || '—'}</span>
+        {(changes.length > 0 || log.type !== 'EDIT') && (
+          <button className="hist-entry-toggle" onClick={() => setOpen(v => !v)}>
+            {open ? '▲ 閉じる' : '▼ 詳細'}
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="hist-entry-body">
+          {log.type === 'EDIT' && changes.length === 0 && (
+            <span style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>明細行の変更のみ</span>
+          )}
+          {log.type === 'EDIT' && changes.map(c => (
+            <div key={c.f} className="hist-change-row">
+              <span className="hist-change-field">{c.f}:</span>
+              <span className="hist-change-before">{c.b}</span>
+              <span className="hist-change-arrow">→</span>
+              <span className="hist-change-after">{c.a}</span>
+            </div>
+          ))}
+          {log.type === 'CREATE' && (
+            <div className="hist-change-row">
+              <span className="hist-change-field">金額:</span>
+              <span className="hist-change-after">¥{histTotal(log.after).toLocaleString('ja-JP')}</span>
+            </div>
+          )}
+          {log.type === 'DELETE' && (
+            <div className="hist-change-row">
+              <span className="hist-change-field">削除前金額:</span>
+              <span className="hist-change-before">¥{histTotal(log.before).toLocaleString('ja-JP')}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function JournalEntry({ initialData = null, onSave, onCancel, accounts, departments = [], auditLogs = [] }) {
   const isEditing = !!initialData
+  const [activeTab, setActiveTab] = useState('form')
 
   const [journalDate, setJournalDate] = useState(initialData?.date || toDay())
   const [voucherNo]   = useState(initialData?.id || genVoucherNo())
@@ -229,6 +309,52 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
         </div>
       </div>
 
+      {isEditing && (
+        <div className="hist-tab-bar no-print">
+          <button
+            className={`hist-tab ${activeTab === 'form' ? 'hist-tab--active' : ''}`}
+            onClick={() => setActiveTab('form')}
+          >
+            仕訳入力
+          </button>
+          <button
+            className={`hist-tab ${activeTab === 'history' ? 'hist-tab--active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            変更履歴
+            {auditLogs.length > 0 && (
+              <span className="hist-tab-count">{auditLogs.length}</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {isEditing && activeTab === 'history' && (
+        <section className="je-card">
+          <div className="je-card__header">
+            <h2 className="je-card__title">変更履歴</h2>
+            <span style={{ fontSize: 12, color: 'var(--c-text-2)' }}>伝票番号: {initialData.id}</span>
+          </div>
+          <div className="je-card__body">
+            {auditLogs.length === 0 ? (
+              <p style={{ color: 'var(--c-text-muted)', padding: '16px 0' }}>
+                変更履歴がありません。この仕訳の登録・修正・削除が行われると記録されます。
+              </p>
+            ) : (
+              <div className="hist-timeline">
+                {auditLogs.map(log => (
+                  <HistLogEntry key={log.id} log={log} />
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="je-actions" style={{ borderTop: '1px solid var(--c-border)', paddingTop: 16 }}>
+            <button type="button" className="je-btn je-btn--secondary" onClick={onCancel}>← 戻る</button>
+          </div>
+        </section>
+      )}
+
+      {(!isEditing || activeTab === 'form') && (
       <form onSubmit={handleSubmit} noValidate>
         {/* 基本情報 */}
         <section className="je-card">
@@ -614,6 +740,7 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
           </button>
         </div>
       </form>
+      )}
     </div>
   )
 }

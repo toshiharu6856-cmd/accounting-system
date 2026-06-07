@@ -2545,3 +2545,305 @@ input, select { font-family: inherit; }
   .inv-badge--qualified { background: #eee !important; color: #000 !important; }
   .inv-badge--non       { background: #eee !important; color: #000 !important; }
 }
+
+/* ================================================================
+   電子帳簿保存法対応 — フッター
+   ================================================================ */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.app-footer-ebadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.app-footer-ebadge::before {
+  content: '✓';
+  font-size: 10px;
+}
+
+.app-footer-copy {
+  color: var(--c-text-muted);
+  font-size: 11px;
+}
+
+/* ================================================================
+   監査ログ — 操作種別バッジ
+   ================================================================ */
+.audit-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.audit-badge--create {
+  background: var(--c-success-light);
+  color: var(--c-success);
+}
+
+.audit-badge--edit {
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+}
+
+.audit-badge--delete {
+  background: var(--c-error-light);
+  color: var(--c-error);
+}
+
+.audit-tr--delete td {
+  background: #fff5f5 !important;
+}
+
+.audit-deleted-label {
+  color: var(--c-error);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ================================================================
+   監査ログ — 詳細展開ボタン
+   ================================================================ */
+.audit-detail-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  white-space: nowrap;
+}
+.audit-detail-btn:hover { background: var(--c-primary-light); color: var(--c-primary); border-color: var(--c-primary); }
+.audit-detail-btn--active { background: var(--c-primary-light); color: var(--c-primary); border-color: var(--c-primary); }
+
+.audit-detail-row td { padding: 0 !important; }
+
+.audit-detail-cell {
+  padding: 0 !important;
+  background: var(--c-bg);
+}
+
+/* ================================================================
+   監査ログ — 詳細パネル
+   ================================================================ */
+.audit-detail {
+  padding: 16px 24px;
+  border-left: 4px solid transparent;
+}
+
+.audit-detail--create { border-left-color: var(--c-success); }
+.audit-detail--edit   { border-left-color: var(--c-primary); }
+.audit-detail--delete { border-left-color: var(--c-error);   }
+
+.audit-detail-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-2);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.audit-diff-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 360px;
+}
+
+.audit-diff-table th,
+.audit-diff-table td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--c-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.audit-diff-table--compare th {
+  font-size: 11px;
+  color: var(--c-text-2);
+  font-weight: 600;
+  background: var(--c-row-alt);
+}
+
+.audit-diff-label {
+  color: var(--c-text-2);
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.audit-diff-before {
+  color: var(--c-error);
+  text-decoration: line-through;
+}
+
+.audit-diff-sep {
+  color: var(--c-text-muted);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.audit-diff-after {
+  color: var(--c-success);
+  font-weight: 600;
+}
+
+/* ================================================================
+   変更履歴タブ（JournalEntry 内）
+   ================================================================ */
+.hist-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 16px;
+  border-bottom: 2px solid var(--c-border);
+  margin-bottom: 20px;
+}
+
+.hist-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: -2px;
+}
+
+.hist-tab:hover { background: var(--c-primary-light); color: var(--c-primary); }
+
+.hist-tab--active {
+  background: var(--c-surface);
+  color: var(--c-primary);
+  border-bottom-color: var(--c-surface);
+  font-weight: 600;
+  border-top: 2px solid var(--c-primary);
+}
+
+.hist-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--c-primary);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ================================================================
+   変更履歴 タイムライン
+   ================================================================ */
+.hist-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hist-entry {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  overflow: hidden;
+}
+
+.hist-entry--create { border-left: 4px solid var(--c-success); }
+.hist-entry--edit   { border-left: 4px solid var(--c-primary); }
+.hist-entry--delete { border-left: 4px solid var(--c-error);   }
+
+.hist-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--c-row-alt);
+}
+
+.hist-entry-time {
+  font-size: 12px;
+  color: var(--c-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.hist-entry-user {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.hist-entry-toggle {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+}
+.hist-entry-toggle:hover { background: var(--c-primary-light); color: var(--c-primary); border-color: var(--c-primary); }
+
+.hist-entry-body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--c-border);
+}
+
+.hist-change-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.hist-change-field {
+  font-weight: 600;
+  color: var(--c-text-2);
+  min-width: 72px;
+}
+
+.hist-change-before {
+  color: var(--c-error);
+  text-decoration: line-through;
+  font-size: 12px;
+}
+
+.hist-change-arrow {
+  color: var(--c-text-muted);
+  font-size: 11px;
+}
+
+.hist-change-after {
+  color: var(--c-success);
+  font-weight: 600;
+}

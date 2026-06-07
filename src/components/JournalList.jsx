@@ -41,12 +41,13 @@ function accountName(code, accounts) {
 
 export default function JournalList({ journals, onNew, onEdit, onDelete, onReset, accounts = [], periodCtx,
   approvals = [], currentUser = null, onRequestApproval }) {
-  const [keyword, setKeyword] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [accountCode, setAccountCode] = useState('')
-  const [amountMin, setAmountMin] = useState('')
-  const [amountMax, setAmountMax] = useState('')
+  const [keyword,      setKeyword]      = useState('')
+  const [dateFrom,     setDateFrom]     = useState('')
+  const [dateTo,       setDateTo]       = useState('')
+  const [accountCode,  setAccountCode]  = useState('')
+  const [amountMin,    setAmountMin]    = useState('')
+  const [amountMax,    setAmountMax]    = useState('')
+  const [counterparty, setCounterparty] = useState('')
 
   const periodFiltered = periodCtx ? periodCtx.periodJournals : journals
 
@@ -58,6 +59,7 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
+    const cp = counterparty.trim().toLowerCase()
     const minN = amountMin === '' ? null : parseFloat(amountMin)
     const maxN = amountMax === '' ? null : parseFloat(amountMax)
 
@@ -76,6 +78,11 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
       if (minN !== null && !isNaN(minN) && amt < minN) return false
       if (maxN !== null && !isNaN(maxN) && amt > maxN) return false
 
+      if (cp) {
+        const hasMemo = j.lines.some(l => (l.memo || '').toLowerCase().includes(cp))
+        if (!hasMemo) return false
+      }
+
       if (kw) {
         const hay = [
           j.id, j.description,
@@ -87,7 +94,7 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
       }
       return true
     })
-  }, [periodFiltered, keyword, dateFrom, dateTo, accountCode, amountMin, amountMax, accounts])
+  }, [periodFiltered, keyword, dateFrom, dateTo, accountCode, amountMin, amountMax, counterparty, accounts])
 
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)),
@@ -123,10 +130,11 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
     setAccountCode('')
     setAmountMin('')
     setAmountMax('')
+    setCounterparty('')
   }
 
   const hasActiveFilter =
-    keyword || dateFrom || dateTo || accountCode || amountMin || amountMax
+    keyword || dateFrom || dateTo || accountCode || amountMin || amountMax || counterparty
 
   return (
     <div className="je">
@@ -201,6 +209,16 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
               <div className="jl-filter-field">
                 <label className="je-label">金額（以下）</label>
                 <input type="number" className="je-input" value={amountMax} onChange={e => setAmountMax(e.target.value)} placeholder="" />
+              </div>
+              <div className="jl-filter-field">
+                <label className="je-label">取引先・行摘要</label>
+                <input
+                  type="text"
+                  className="je-input"
+                  value={counterparty}
+                  onChange={e => setCounterparty(e.target.value)}
+                  placeholder="補助科目・取引先名"
+                />
               </div>
               <div className="jl-filter-field jl-filter-field--btn">
                 <button
