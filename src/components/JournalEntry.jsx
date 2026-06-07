@@ -1,5 +1,9 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import AccountSelect from './AccountSelect'
+import {
+  TAX_CATEGORIES, TRANSITIONAL_MEASURES, INVOICE_DEFAULTS,
+  validateInvoiceNo, calcTax, calcInputCredit,
+} from '../data/invoiceConstants'
 
 const VOUCHER_TYPES = [
   { code: '',        name: '--- 選択してください ---' },
@@ -65,11 +69,30 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
   const [errors,  setErrors]  = useState({})
   const [toast,   setToast]   = useState(null)
 
+  // インボイス情報
+  const initInv = initialData?.invoice || INVOICE_DEFAULTS
+  const [invEnabled,    setInvEnabled]    = useState(initInv.enabled    ?? false)
+  const [invNo,         setInvNo]         = useState(initInv.invoiceNo  ?? '')
+  const [qualified,     setQualified]     = useState(initInv.qualified  ?? true)
+  const [taxCategory,   setTaxCategory]   = useState(initInv.taxCategory  ?? 'TAX10')
+  const [taxInput,      setTaxInput]      = useState(initInv.taxInput      ?? 'inclusive')
+  const [transitional,  setTransitional]  = useState(initInv.transitional  ?? 'TRANS80')
+
   const debitTotal  = useMemo(() => lines.reduce((s, l) => s + parseAmt(l.debitAmount),  0), [lines])
   const creditTotal = useMemo(() => lines.reduce((s, l) => s + parseAmt(l.creditAmount), 0), [lines])
   const isBalanced   = debitTotal > 0 && creditTotal > 0 && debitTotal === creditTotal
   const difference   = debitTotal - creditTotal
   const hasAnyAmount = debitTotal > 0 || creditTotal > 0
+
+  // 消費税計算（借方合計を入力金額として使用）
+  const invCalc = useMemo(() => {
+    if (!invEnabled || debitTotal <= 0) return { base: 0, tax: 0, total: 0, credit: 0 }
+    const { base, tax, total } = calcTax(debitTotal, taxCategory, taxInput)
+    const credit = calcInputCredit(tax, qualified, transitional)
+    return { base, tax, total, credit }
+  }, [invEnabled, debitTotal, taxCategory, taxInput, qualified, transitional])
+
+  const isTaxable = TAX_CATEGORIES.find(c => c.code === taxCategory)?.taxable ?? false
 
   const clearError = useCallback((key) => {
     setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
@@ -99,6 +122,11 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
 
     if (!journalDate) errs.journalDate = '仕訳日付は必須です'
     if (!voucherType) errs.voucherType = '伝票種別は必須です'
+
+    if (invEnabled && qualified) {
+      const invNoErr = validateInvoiceNo(invNo)
+      if (invNoErr) errs.invNo = invNoErr
+    }
 
     let hasDebit = false, hasCredit = false
 
@@ -138,6 +166,18 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
       voucherType,
       description,
       deptCode: deptCode || '',
+      invoice: invEnabled ? {
+        enabled:      true,
+        invoiceNo:    qualified ? invNo.trim() : '',
+        qualified,
+        taxCategory,
+        taxInput,
+        transitional: (!qualified && isTaxable) ? transitional : null,
+        baseAmount:   invCalc.base,
+        taxAmount:    invCalc.tax,
+        totalAmount:  invCalc.total,
+        creditAmount: invCalc.credit,
+      } : { ...INVOICE_DEFAULTS, enabled: false },
       lines: lines
         .filter(l =>
           (l.debitCode  && parseAmt(l.debitAmount)  > 0) ||
@@ -164,6 +204,12 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
     setLines([newLine(), newLine()])
     setErrors({})
     setToast(null)
+    setInvEnabled(false)
+    setInvNo('')
+    setQualified(true)
+    setTaxCategory('TAX10')
+    setTaxInput('inclusive')
+    setTransitional('TRANS80')
   }
 
   return (
@@ -395,6 +441,136 @@ export default function JournalEntry({ initialData = null, onSave, onCancel, acc
               <button type="button" className="je-add-btn" onClick={addLine}>＋ 行を追加</button>
             </div>
           </div>
+        </section>
+
+        {/* インボイス情報 */}
+        <section className="je-card">
+          <div className="je-card__header">
+            <h2 className="je-card__title">インボイス情報</h2>
+            <label className="inv-enable-toggle">
+              <input
+                type="checkbox"
+                checked={invEnabled}
+                onChange={e => setInvEnabled(e.target.checked)}
+              />
+              インボイス制度対応を入力する
+            </label>
+          </div>
+
+          {invEnabled && (
+            <div className="je-card__body">
+              <div className="inv-section-grid">
+
+                {/* 適格 / 非適格 */}
+                <div className="je-field">
+                  <label className="je-label je-label--required">適格請求書</label>
+                  <div className="inv-radio-group">
+                    <label className={`inv-radio-label ${qualified ? 'inv-radio-label--active' : ''}`}>
+                      <input type="radio" name="qualified" value="true"
+                        checked={qualified} onChange={() => setQualified(true)} />
+                      適格
+                    </label>
+                    <label className={`inv-radio-label ${!qualified ? 'inv-radio-label--active inv-radio-label--non' : ''}`}>
+                      <input type="radio" name="qualified" value="false"
+                        checked={!qualified} onChange={() => setQualified(false)} />
+                      非適格
+                    </label>
+                  </div>
+                </div>
+
+                {/* 登録番号（適格のみ） */}
+                <div className="je-field">
+                  <label className="je-label" style={{ opacity: qualified ? 1 : 0.4 }}>
+                    適格請求書登録番号
+                  </label>
+                  <input
+                    type="text"
+                    className={`je-input inv-no-input ${errors.invNo ? 'je-input--error' : ''}`}
+                    value={invNo}
+                    onChange={e => { setInvNo(e.target.value.toUpperCase()); setErrors(v => { const n={...v}; delete n.invNo; return n }) }}
+                    placeholder="T1234567890123"
+                    maxLength={14}
+                    disabled={!qualified}
+                    style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                  />
+                  {errors.invNo
+                    ? <span className="je-field-error">{errors.invNo}</span>
+                    : qualified && <span className="je-field-hint">T + 13桁の数字</span>
+                  }
+                </div>
+
+                {/* 消費税区分 */}
+                <div className="je-field">
+                  <label className="je-label je-label--required">消費税区分</label>
+                  <select className="je-select" value={taxCategory} onChange={e => setTaxCategory(e.target.value)}>
+                    {TAX_CATEGORIES.map(c => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 税込 / 税抜（課税のみ） */}
+                <div className="je-field">
+                  <label className="je-label" style={{ opacity: isTaxable ? 1 : 0.4 }}>入力方法</label>
+                  <div className="inv-radio-group">
+                    <label className={`inv-radio-label ${taxInput === 'inclusive' ? 'inv-radio-label--active' : ''}`}>
+                      <input type="radio" name="taxInput" value="inclusive"
+                        checked={taxInput === 'inclusive'} onChange={() => setTaxInput('inclusive')} disabled={!isTaxable} />
+                      税込入力
+                    </label>
+                    <label className={`inv-radio-label ${taxInput === 'exclusive' ? 'inv-radio-label--active' : ''}`}>
+                      <input type="radio" name="taxInput" value="exclusive"
+                        checked={taxInput === 'exclusive'} onChange={() => setTaxInput('exclusive')} disabled={!isTaxable} />
+                      税抜入力
+                    </label>
+                  </div>
+                </div>
+
+                {/* 経過措置（非適格 + 課税のみ） */}
+                {!qualified && isTaxable && (
+                  <div className="je-field inv-field--wide">
+                    <label className="je-label je-label--required">経過措置</label>
+                    <select className="je-select" value={transitional} onChange={e => setTransitional(e.target.value)}>
+                      {TRANSITIONAL_MEASURES.map(m => (
+                        <option key={m.code} value={m.code}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              </div>
+
+              {/* 消費税計算結果 */}
+              {isTaxable && debitTotal > 0 && (
+                <div className="inv-calc-panel">
+                  <div className="inv-calc-title">消費税 自動計算結果</div>
+                  <div className="inv-calc-row">
+                    <span className="inv-calc-label">税抜金額</span>
+                    <span className="inv-calc-value">¥{invCalc.base.toLocaleString('ja-JP')}</span>
+                  </div>
+                  <div className="inv-calc-row">
+                    <span className="inv-calc-label">消費税額</span>
+                    <span className="inv-calc-value inv-calc-value--tax">¥{invCalc.tax.toLocaleString('ja-JP')}</span>
+                  </div>
+                  <div className="inv-calc-row">
+                    <span className="inv-calc-label">税込金額</span>
+                    <span className="inv-calc-value inv-calc-value--total">¥{invCalc.total.toLocaleString('ja-JP')}</span>
+                  </div>
+                  <div className="inv-calc-divider" />
+                  <div className="inv-calc-row">
+                    <span className="inv-calc-label">仕入税額控除</span>
+                    <span className="inv-calc-value inv-calc-value--credit">¥{invCalc.credit.toLocaleString('ja-JP')}</span>
+                  </div>
+                  {!qualified && (
+                    <div className="inv-calc-note">
+                      ※ {TRANSITIONAL_MEASURES.find(m => m.code === transitional)?.label || ''}
+                      が適用されています
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* 貸借バランス */}

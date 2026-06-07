@@ -15,6 +15,7 @@ import DeptPL               from './components/DeptPL'
 import BudgetManagement     from './components/BudgetManagement'
 import ApprovalInbox        from './components/ApprovalInbox'
 import MyApprovals          from './components/MyApprovals'
+import InvoiceSummary       from './components/InvoiceSummary'
 import LoginScreen          from './components/LoginScreen'
 import CompanyMaster        from './components/masters/CompanyMaster'
 import AccountMaster        from './components/masters/AccountMaster'
@@ -24,17 +25,18 @@ import UserManagement       from './components/masters/UserManagement'
 // 役割ごとのアクセス可能ページ
 const ALLOWED_PAGES = {
   USER:     new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'myapprovals']),
-  APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'myapprovals', 'approvalinbox']),
-  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt']),
+  APPROVER: new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox']),
+  ADMIN:    new Set(['list', 'entry', 'ledger', 'pl', 'bs', 'deptpl', 'budget', 'invoice', 'myapprovals', 'approvalinbox', 'company', 'acctmaster', 'deptmaster', 'usermgmt']),
 }
 
 const ALL_MAIN_PAGES = [
-  { id: 'list',   label: '仕訳一覧'  },
-  { id: 'ledger', label: '総勘定元帳' },
-  { id: 'pl',     label: '損益計算書' },
-  { id: 'bs',     label: '貸借対照表' },
-  { id: 'deptpl', label: '部門別損益' },
-  { id: 'budget', label: '予算管理'  },
+  { id: 'list',    label: '仕訳一覧'    },
+  { id: 'ledger',  label: '総勘定元帳'  },
+  { id: 'pl',      label: '損益計算書'  },
+  { id: 'bs',      label: '貸借対照表'  },
+  { id: 'deptpl',  label: '部門別損益'  },
+  { id: 'budget',  label: '予算管理'   },
+  { id: 'invoice', label: 'インボイス'  },
 ]
 
 const MASTER_PAGES = [
@@ -286,6 +288,12 @@ export default function App() {
             getBudget={getBudget}
             saveBudgetBulk={saveBudgetBulk}
             deleteBudget={deleteBudget}
+            periodCtx={periodCtx}
+          />
+        )}
+        {page === 'invoice' && (
+          <InvoiceSummary
+            journals={journals}
             periodCtx={periodCtx}
           />
         )}

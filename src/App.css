@@ -2385,3 +2385,163 @@ input, select { font-family: inherit; }
 
 /* 旧ユーザー切替（廃止済みだが念のため非表示） */
 .app-user-switcher { display: none !important; }
+
+/* ============================================================
+   インボイス制度対応 (inv-*)
+   ============================================================ */
+
+/* --- 適格/非適格バッジ --- */
+.inv-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.inv-badge--qualified { background: #d1fae5; color: #065f46; }
+.inv-badge--non       { background: #fef3c7; color: #92400e; }
+
+/* --- 仕訳一覧のインボイスセル --- */
+.inv-cell { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.inv-cell-no {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--c-text-muted);
+  letter-spacing: 0.03em;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- インボイス入力セクション --- */
+.inv-enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--c-text-2);
+  cursor: pointer;
+  user-select: none;
+}
+.inv-enable-toggle input { cursor: pointer; }
+
+.inv-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px 24px;
+  margin-bottom: 20px;
+}
+.inv-field--wide { grid-column: 1 / -1; }
+
+/* --- 適格/非適格ラジオ --- */
+.inv-radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.inv-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+}
+.inv-radio-label input[type=radio] { display: none; }
+.inv-radio-label:hover { background: var(--c-hover); }
+.inv-radio-label--active {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+.inv-radio-label--non.inv-radio-label--active {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+
+/* --- 登録番号入力 --- */
+.inv-no-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* --- 消費税計算結果パネル --- */
+.inv-calc-panel {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 16px 20px;
+  max-width: 400px;
+}
+.inv-calc-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.inv-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+.inv-calc-label {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+.inv-calc-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+.inv-calc-value--tax   { color: #b45309; }
+.inv-calc-value--total { color: var(--c-text); font-size: 16px; }
+.inv-calc-value--credit{
+  color: var(--c-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+.inv-calc-divider {
+  height: 1px;
+  background: #bfdbfe;
+  margin: 8px 0;
+}
+.inv-calc-note {
+  font-size: 11px;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-top: 8px;
+}
+
+/* --- 集計表の合計行 --- */
+.inv-summary-total td {
+  background: #f0f9ff !important;
+  border-top: 2px solid #3b82f6 !important;
+}
+
+/* --- 経過措置ラベル --- */
+.inv-trans-label {
+  font-size: 11px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* --- 印刷対応 --- */
+@media print {
+  .inv-calc-panel { border: 1px solid #999 !important; background: #fff !important; }
+  .inv-badge--qualified { background: #eee !important; color: #000 !important; }
+  .inv-badge--non       { background: #eee !important; color: #000 !important; }
+}

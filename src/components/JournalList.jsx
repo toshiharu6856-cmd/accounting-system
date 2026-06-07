@@ -236,6 +236,7 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
                     <th className="jl-th jl-th--debit">借方科目</th>
                     <th className="jl-th jl-th--credit">貸方科目</th>
                     <th className="jl-th jl-th--right">金額</th>
+                    <th className="jl-th jl-th--center">インボイス</th>
                     <th className="jl-th jl-th--center">承認</th>
                     <th className="jl-th jl-th--center no-print">操作</th>
                   </tr>
@@ -264,6 +265,20 @@ export default function JournalList({ journals, onNew, onEdit, onDelete, onReset
                         <td className="jl-td jl-td--account jl-td--debit">{dr}</td>
                         <td className="jl-td jl-td--account jl-td--credit">{cr}</td>
                         <td className="jl-td jl-td--amount">¥{amt.toLocaleString('ja-JP')}</td>
+                        <td className="jl-td jl-td--actions">
+                          {j.invoice?.enabled ? (
+                            <div className="inv-cell">
+                              <span className={`inv-badge ${j.invoice.qualified ? 'inv-badge--qualified' : 'inv-badge--non'}`}>
+                                {j.invoice.qualified ? '適格' : '非適格'}
+                              </span>
+                              {j.invoice.invoiceNo && (
+                                <div className="inv-cell-no">{j.invoice.invoiceNo}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--c-text-muted)', fontSize: 11 }}>—</span>
+                          )}
+                        </td>
                         <td className="jl-td jl-td--actions">
                           {statusInfo
                             ? <span className={`apv-badge ${statusInfo.cls}`}>{statusInfo.label}</span>
